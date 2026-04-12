@@ -3,6 +3,7 @@
 ## Prerequisites
 
 ### System Requirements
+
 - **OS**: Windows, macOS, or Linux
 - **Docker**: Version 20.10+ with Docker Compose
 - **Python**: 3.11+ (for local backend development)
@@ -58,6 +59,7 @@ cat .env
 ```
 
 ### Default Values (for local dev)
+
 ```
 DATABASE_NAME=movie_db
 DATABASE_USER=postgres
@@ -152,16 +154,19 @@ docker-compose exec backend python manage.py shell
 ## 5. Access Applications
 
 ### Frontend (React)
+
 - **URL**: http://localhost:3000
 - **Expected**: Movie catalog grid loads
 - **Note**: Frontend connects to backend at http://backend:8000/api
 
 ### Backend API
+
 - **URL**: http://localhost:8000/api/
 - **Test**: http://localhost:8000/api/movies/
 - **Response**: JSON list of paginated movies
 
 ### Django Admin Panel
+
 - **URL**: http://localhost:8000/admin/
 - **Username**: `admin`
 - **Password**: `admin123`
@@ -266,6 +271,7 @@ docker-compose down -v
 ### Enable Kubernetes
 
 **Docker Desktop**:
+
 1. Click Docker icon → Preferences/Settings
 2. Go to "Kubernetes" tab
 3. Check "Enable Kubernetes"
@@ -396,6 +402,7 @@ npm run dev
 ### Docker Issues
 
 **Port Already in Use**
+
 ```bash
 # Find process on port 8000
 lsof -i :8000
@@ -564,6 +571,7 @@ time curl http://localhost:8000/api/movies/
 ## 13. CI/CD Setup (GitHub Actions)
 
 See `.github/workflows/ci-cd.yml` for:
+
 - Automated testing on push
 - Docker image building
 - Kubernetes deployment
@@ -583,6 +591,7 @@ See `.github/workflows/ci-cd.yml` for:
 ## Support
 
 For issues or questions:
+
 1. Check [Troubleshooting](#10-troubleshooting) section
 2. Review logs: `docker-compose logs`
 3. Read project docs in `/docs/`

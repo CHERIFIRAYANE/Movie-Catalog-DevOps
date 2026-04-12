@@ -3,9 +3,9 @@
  * Shows loading state while fetching data
  */
 
-import React from 'react'
+import React from "react";
 
-const LoadingSpinner = ({ message = 'Loading movies...' }) => {
+const LoadingSpinner = ({ message = "Loading movies..." }) => {
   return (
     <div className="flex flex-col items-center justify-center py-16">
       <div className="relative w-16 h-16 mb-4">
@@ -17,7 +17,7 @@ const LoadingSpinner = ({ message = 'Loading movies...' }) => {
         🎬 Finding amazing movies for you...
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LoadingSpinner
+export default LoadingSpinner;

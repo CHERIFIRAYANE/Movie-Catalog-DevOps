@@ -3,15 +3,15 @@
  * Displays paginated grid of movies with search and filters
  */
 
-import React from 'react'
-import MovieCard from './MovieCard'
-import SearchBar from './SearchBar'
-import Pagination from './Pagination'
-import LoadingSpinner from './LoadingSpinner'
+import React from "react";
+import MovieCard from "./MovieCard";
+import SearchBar from "./SearchBar";
+import Pagination from "./Pagination";
+import LoadingSpinner from "./LoadingSpinner";
 
-const MovieGrid = ({ 
-  movies, 
-  loading, 
+const MovieGrid = ({
+  movies,
+  loading,
   error,
   page,
   hasNext,
@@ -21,7 +21,9 @@ const MovieGrid = ({
   onSearch,
   isFavoritedFn,
   onFavorite,
-  onUnfavorite
+  onUnfavorite,
+  onMovieClick,
+  hideSearchBar = false,
 }) => {
   if (error) {
     return (
@@ -29,13 +31,13 @@ const MovieGrid = ({
         <h3 className="font-bold mb-2">❌ Error Loading Movies</h3>
         <p>{error}</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="w-full">
-      {/* Search Bar */}
-      <SearchBar onSearch={onSearch} />
+      {/* Search Bar - Hidden when used in AdvancedSearch */}
+      {!hideSearchBar && <SearchBar onSearch={onSearch} />}
 
       {/* Loading State */}
       {loading ? (
@@ -43,7 +45,9 @@ const MovieGrid = ({
       ) : movies.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-6xl mb-4">🎬</div>
-          <h3 className="text-2xl font-bold text-white mb-2">No movies found</h3>
+          <h3 className="text-2xl font-bold text-white mb-2">
+            No movies found
+          </h3>
           <p className="text-slate-400">Try adjusting your search or filters</p>
         </div>
       ) : (
@@ -57,6 +61,7 @@ const MovieGrid = ({
                 isFavorited={isFavoritedFn(movie.id)}
                 onFavorite={onFavorite}
                 onUnfavorite={onUnfavorite}
+                onMovieClick={onMovieClick}
               />
             ))}
           </div>
@@ -72,7 +77,7 @@ const MovieGrid = ({
         </>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default MovieGrid
+export default MovieGrid;

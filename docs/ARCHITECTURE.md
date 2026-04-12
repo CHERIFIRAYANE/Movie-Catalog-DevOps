@@ -1,6 +1,7 @@
 # Architecture & Technical Decisions
 
 ## Document Version
+
 - **Last Updated**: April 11, 2026
 - **Status**: In Progress (filled during development)
 
@@ -55,6 +56,7 @@ The Movie Catalog application follows a **three-tier microservices architecture*
 ### Backend: Django REST Framework (DRF)
 
 **Why Django?**
+
 - ✅ **ORM (Object-Relational Mapping)**: Eliminates raw SQL; reduces bugs
 - ✅ **Built-in Admin Panel**: Manage movies, users without custom UI
 - ✅ **Security Defaults**: CSRF protection, SQL injection prevention, password hashing
@@ -63,6 +65,7 @@ The Movie Catalog application follows a **three-tier microservices architecture*
 - ✅ **Testing Framework**: Django.test integrates with database
 
 **Alternatives Considered**:
+
 - **Flask**: Minimal, flexible, but requires manual setup for validation, admin, auth → Adds ~2 weeks for solo dev
 - **FastAPI**: Modern async/await, but overkill for CRUD operations; learning curve on async patterns
 
@@ -73,18 +76,21 @@ The Movie Catalog application follows a **three-tier microservices architecture*
 ### Frontend: React + Vite
 
 **Why React?**
+
 - ✅ **Component Reusability**: MovieCard, SearchBar, Pagination shared across pages
 - ✅ **State Management**: Hooks (useState, useEffect) sufficient for this scope
 - ✅ **Ecosystem**: axios, react-router mature and stable
 - ✅ **Developer Experience**: JSX intuitive, browser DevTools excellent
 
 **Why Vite (not Create React App)?**
+
 - ✅ **Build Speed**: 10-50x faster than webpack; HMR in <100ms
 - ✅ **Docker-Friendly**: Smaller final bundle, faster image builds
 - ✅ **Native ESM**: Modern build strategy, fewer dependencies
 - ✅ **Minimal Config**: vite.config.js has ~20 lines vs. CRA's hidden webpack config
 
 **Alternatives Considered**:
+
 - **Vue/Angular**: Equivalent functionality; React ecosystem more familiar
 - **SvelteKit**: Excellent performance; smaller community, less documentation
 
@@ -96,16 +102,17 @@ The Movie Catalog application follows a **three-tier microservices architecture*
 
 **Why PostgreSQL?**
 
-| Feature | Need | PostgreSQL | MongoDB |
-|---------|------|-----------|---------|
-| **Relational Data** | Movies ↔ Genres ↔ Ratings | ✅ Native | ⚠️ Document-based (less natural) |
-| **ACID Transactions** | Ensure consistency (e.g., favorite add fails atomically) | ✅ Yes | ⚠️ Yes (but heavier semantics) |
-| **Full-Text Search** | Search by title, overview | ✅ Native `ilike`, `FTS` | ⚠️ Requires Elasticsearch |
-| **JSON Support** | Flexible fields (e.g., metadata) | ✅ JSONB type | ✅ Native |
-| **Mature Ecosystem** | Proven at Netflix, Spotify, Airbnb | ✅ 25+ years | ⚠️ 15 years (younger) |
-| **Free/Open-Source** | Budget constraint | ✅ Yes | ✅ Yes |
+| Feature               | Need                                                     | PostgreSQL               | MongoDB                          |
+| --------------------- | -------------------------------------------------------- | ------------------------ | -------------------------------- |
+| **Relational Data**   | Movies ↔ Genres ↔ Ratings                                | ✅ Native                | ⚠️ Document-based (less natural) |
+| **ACID Transactions** | Ensure consistency (e.g., favorite add fails atomically) | ✅ Yes                   | ⚠️ Yes (but heavier semantics)   |
+| **Full-Text Search**  | Search by title, overview                                | ✅ Native `ilike`, `FTS` | ⚠️ Requires Elasticsearch        |
+| **JSON Support**      | Flexible fields (e.g., metadata)                         | ✅ JSONB type            | ✅ Native                        |
+| **Mature Ecosystem**  | Proven at Netflix, Spotify, Airbnb                       | ✅ 25+ years             | ⚠️ 15 years (younger)            |
+| **Free/Open-Source**  | Budget constraint                                        | ✅ Yes                   | ✅ Yes                           |
 
 **Alternatives Considered**:
+
 - **MySQL**: Works equally; PostgreSQL has better JSON support & ecosystem
 - **SQLite**: Single-file; no multi-container scaling; acceptable for proof-of-concept only
 
@@ -117,16 +124,17 @@ The Movie Catalog application follows a **three-tier microservices architecture*
 
 **Why Redis?**
 
-| Feature | Use Case | Redis | Memcached |
-|---------|----------|-------|-----------|
-| **Data Structures** | Need expiring key-value | ✅ Strings, lists, hashes, sets | ⚠️ Strings only |
-| **Persistence** | Optional durability | ✅ RDB snapshots, AOF logs | ❌ In-memory only |
-| **Pub/Sub** | Future WebSocket features | ✅ Built-in | ❌ Not available |
-| **Transactions** | Atomic operations | ✅ MULTI/EXEC | ❌ Not available |
-| **TTL Support** | Expiring cache entries | ✅ Automatic expiration | ✅ Yes |
-| **Docker Image Size** | Container efficiency | ✅ 10MB (redis:7-alpine) | ✅ 8MB (memcached:alpine) |
+| Feature               | Use Case                  | Redis                           | Memcached                 |
+| --------------------- | ------------------------- | ------------------------------- | ------------------------- |
+| **Data Structures**   | Need expiring key-value   | ✅ Strings, lists, hashes, sets | ⚠️ Strings only           |
+| **Persistence**       | Optional durability       | ✅ RDB snapshots, AOF logs      | ❌ In-memory only         |
+| **Pub/Sub**           | Future WebSocket features | ✅ Built-in                     | ❌ Not available          |
+| **Transactions**      | Atomic operations         | ✅ MULTI/EXEC                   | ❌ Not available          |
+| **TTL Support**       | Expiring cache entries    | ✅ Automatic expiration         | ✅ Yes                    |
+| **Docker Image Size** | Container efficiency      | ✅ 10MB (redis:7-alpine)        | ✅ 8MB (memcached:alpine) |
 
 **Caching Strategy**:
+
 ```python
 # Example: Cache movie list page for 1 hour
 cache_key = f"movies:page:{page_num}"
@@ -139,6 +147,7 @@ return deserialize(cached_data)
 ```
 
 **Alternatives Considered**:
+
 - **Database-Level Caching**: PostgreSQL query plan caching; insufficient for high-traffic scenarios
 - **Elasticsearch**: Full-featured search engine; overkill for 5k movies with PostgreSQL `ILIKE`
 
@@ -150,14 +159,15 @@ return deserialize(cached_data)
 
 **Why Docker?**
 
-| Requirement | meets? | Reason |
-|-----------|--------|--------|
-| **Reproducibility** | ✅ | Same image runs identically on laptop, CI/CD, Kubernetes |
-| **Isolation** | ✅ | Services don't interfere (backend Python deps ≠ frontend Node deps) |
-| **Kubernetes-Ready** | ✅ | K8s expects OCI-compliant container images |
-| **Industry Standard** | ✅ | 90%+ of projects; forces to learn transferable skills |
+| Requirement           | meets? | Reason                                                              |
+| --------------------- | ------ | ------------------------------------------------------------------- |
+| **Reproducibility**   | ✅     | Same image runs identically on laptop, CI/CD, Kubernetes            |
+| **Isolation**         | ✅     | Services don't interfere (backend Python deps ≠ frontend Node deps) |
+| **Kubernetes-Ready**  | ✅     | K8s expects OCI-compliant container images                          |
+| **Industry Standard** | ✅     | 90%+ of projects; forces to learn transferable skills               |
 
 **Multi-Stage Builds**:
+
 ```dockerfile
 # Frontend example
 FROM node:20-alpine AS build
@@ -170,6 +180,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 ```
 
 **Alternatives Considered**:
+
 - **Podman**: Drop-in Docker replacement; less ecosystem support
 - **LXC**: Lower-level containers; steeper learning curve
 
@@ -181,19 +192,20 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 **Why Kubernetes (not Docker Swarm)?**
 
-| Feature | K8s | Swarm |
-|---------|-----|-------|
-| **Self-Healing** | Restarts failed pods | Restart if marked | |
-| **Load Balancing** | Service abstraction (round-robin) | Basic | |
-| **Rolling Updates** | Zero-downtime deploys | Requires scripting | |
-| **ConfigMaps/Secrets** | Native config separation | External .env files | |
-| **Scaling** | Horizontal scaling (`replicas: 3`) | `docker service scale` | |
-| **Industry Adoption** | ~95% of enterprises | ~5% | |
-| **Learning Value** | High (production-grade) | Low (simplified) | |
+| Feature                | K8s                                | Swarm                  |
+| ---------------------- | ---------------------------------- | ---------------------- | --- |
+| **Self-Healing**       | Restarts failed pods               | Restart if marked      |     |
+| **Load Balancing**     | Service abstraction (round-robin)  | Basic                  |     |
+| **Rolling Updates**    | Zero-downtime deploys              | Requires scripting     |     |
+| **ConfigMaps/Secrets** | Native config separation           | External .env files    |     |
+| **Scaling**            | Horizontal scaling (`replicas: 3`) | `docker service scale` |     |
+| **Industry Adoption**  | ~95% of enterprises                | ~5%                    |     |
+| **Learning Value**     | High (production-grade)            | Low (simplified)       |     |
 
 **Decision**: Kubernetes required by spec; learning it has real-world applicability.
 
 **K8s Resource Types Used**:
+
 - **Deployment**: Frontend (2 replicas), Backend (2 replicas) - Stateless services
 - **StatefulSet**: PostgreSQL (1 replica) - Requires ordered startup, stable identity
 - **Service**: ClusterIP (internal), LoadBalancer (external frontend)
@@ -240,14 +252,17 @@ COPY --from=build /app/dist /usr/share/nginx/html
 ### Schema Normalization
 
 **First Normal Form (1NF)**: All attributes atomic
+
 - ❌ NOT: `movies.directors VARCHAR = "Spielberg; Kubrick"`
 - ✅ YES: `genres TEXT ARRAY = ['Action', 'Drama']` (array storage)
 
 **Second Normal Form (2NF)**: Non-key attributes fully depend on primary key
+
 - ✅ `movies.title` depends only on `movies.id`
 - ✅ `favorites` doesn't store duplicate movie data; uses foreign key
 
 **Third Normal Form (3NF)**: No transitive dependencies
+
 - ✅ `movies.director_id` doesn't exist (would create transitive dependency)
 - ✅ Director info could be added later without redesign
 
@@ -259,13 +274,13 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 ### REST Principles Applied
 
-| Principle | Implementation |
-|-----------|---|
-| **Stateless** | Each request contains all needed info; server doesn't store client state |
-| **Resource-Based** | `/api/movies/` (resource), not `/api/getMovies()` (action) |
-| **Standard Methods** | GET (read), POST (create), DELETE (remove); no PATCH for scope |
+| Principle             | Implementation                                                                  |
+| --------------------- | ------------------------------------------------------------------------------- |
+| **Stateless**         | Each request contains all needed info; server doesn't store client state        |
+| **Resource-Based**    | `/api/movies/` (resource), not `/api/getMovies()` (action)                      |
+| **Standard Methods**  | GET (read), POST (create), DELETE (remove); no PATCH for scope                  |
 | **HTTP Status Codes** | 200 (OK), 201 (Created), 400 (Bad Request), 404 (Not Found), 500 (Server Error) |
-| **JSON Content-Type** | `Content-Type: application/json` for all requests/responses |
+| **JSON Content-Type** | `Content-Type: application/json` for all requests/responses                     |
 
 ### Endpoint Reference
 
@@ -310,6 +325,7 @@ GET    /api/favorites/
 ### Cache Invalidation Patterns
 
 **Time-Based Expiration (TTL)**:
+
 - Most cache entries have `EXPIRE` commands
 - Simple, no coordination needed
 - Trade-off: Slight staleness (acceptable for movie catalog)
@@ -320,6 +336,7 @@ cache.set(f"movie:{id}", serialize(movie), timeout=86400)  # 24 hours
 ```
 
 **Event-Based Invalidation**:
+
 - When admin imports new CSV: `cache.clear()` or pattern delete
 - When user adds favorite: invalidate user's favorites list
 
@@ -331,12 +348,12 @@ cache.delete_pattern("search:*")
 
 ### TTL Values
 
-| Cache Key | TTL | Rationale |
-|-----------|-----|-----------|
-| `movies:page:{n}` | 3600s (1h) | Popular queries; frequent access |
-| `movie:{id}` | 86400s (24h) | Detail rarely changes; good miss cost |
-| `search:{query}` | 1800s (30m) | Search results can be stale; query patterns vary |
-| `favorites:{user_id}` | 3600s (1h) | User can refresh manually if needed |
+| Cache Key             | TTL          | Rationale                                        |
+| --------------------- | ------------ | ------------------------------------------------ |
+| `movies:page:{n}`     | 3600s (1h)   | Popular queries; frequent access                 |
+| `movie:{id}`          | 86400s (24h) | Detail rarely changes; good miss cost            |
+| `search:{query}`      | 1800s (30m)  | Search results can be stale; query patterns vary |
+| `favorites:{user_id}` | 3600s (1h)   | User can refresh manually if needed              |
 
 ---
 
@@ -345,24 +362,26 @@ cache.delete_pattern("search:*")
 ### Authentication & Authorization
 
 **Current Scope (Simple)**:
+
 - ✅ Session-based identification (not full OAuth)
 - ✅ GET endpoints (movies, search) public
 - ✅ POST/DELETE (favorites) require session token
 - ✅ Django middleware: CSRF token validation
 
 **Future (Out of Scope)**:
+
 - ❌ User signup/login page
 - ❌ JWT with refresh tokens
 - ❌ Role-based access (admin vs. user)
 
 ### Data Protection
 
-| Layer | Mechanism |
-|-------|-----------|
-| **Transport** | HTTPS (enforced in production K8s manifests; dev uses HTTP) |
-| **Database** | PostgreSQL user password (strong, in Secrets) |
-| **Secrets** | K8s Secrets (base64 encoded; encrypted at rest if configured) |
-| **API** | Environment variables; no hardcoded keys |
+| Layer         | Mechanism                                                     |
+| ------------- | ------------------------------------------------------------- |
+| **Transport** | HTTPS (enforced in production K8s manifests; dev uses HTTP)   |
+| **Database**  | PostgreSQL user password (strong, in Secrets)                 |
+| **Secrets**   | K8s Secrets (base64 encoded; encrypted at rest if configured) |
+| **API**       | Environment variables; no hardcoded keys                      |
 
 ### SQL Injection Prevention
 
@@ -403,6 +422,7 @@ for movie in movies:
 ### Caching ROI
 
 **Example: Paginated Movie List**
+
 - Database query cost: ~100ms (sort, paginate)
 - Redis get cost: ~1ms
 - **ROI**: 100x faster for cache hits; justified for 1-hour TTL
@@ -474,11 +494,13 @@ for movie in movies:
 **Current**: 2 frontend, 2 backend replicas
 
 If throughput increases (e.g., 1M requests/day):
+
 - ✅ Add frontend replicas (stateless, fast)
 - ✅ Add backend replicas (stateless API)
 - ⚠️ Database becomes bottleneck → Requires read replicas, connection pooling
 
 **Not Scaled**:
+
 - PostgreSQL: 1 primary (single point of write)
 - Redis: 1 instance
 
@@ -510,14 +532,14 @@ Not in scope, but recommended for production:
 
 ## 11. Summary of Architectural Decisions
 
-| Decision | Choice | Why | Trade-off |
-|----------|--------|-----|-----------|
-| API Framework | Django DRF | ORM + validation | Heavier than Flask |
-| Frontend | React + Vite | Ecosystem + speed | Facebook ecosystem dependency |
-| Database | PostgreSQL | ACID + FTS | More complex than SQLite |
-| Cache | Redis | Pub/Sub ready | More complex than Memcached |
-| Deployment | Kubernetes | Industry standard | Steeper learning curve |
-| Data Source | Kaggle CSV | Deterministic | No real-time updates |
+| Decision      | Choice       | Why               | Trade-off                     |
+| ------------- | ------------ | ----------------- | ----------------------------- |
+| API Framework | Django DRF   | ORM + validation  | Heavier than Flask            |
+| Frontend      | React + Vite | Ecosystem + speed | Facebook ecosystem dependency |
+| Database      | PostgreSQL   | ACID + FTS        | More complex than SQLite      |
+| Cache         | Redis        | Pub/Sub ready     | More complex than Memcached   |
+| Deployment    | Kubernetes   | Industry standard | Steeper learning curve        |
+| Data Source   | Kaggle CSV   | Deterministic     | No real-time updates          |
 
 **Overall Philosophy**: Balance **learning value** (justifies Kubernetes, DRF, PostgreSQL) with **practical delivery** (3-container simplicity, no Elasticsearch, no user auth).
 

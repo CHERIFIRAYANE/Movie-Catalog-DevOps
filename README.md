@@ -5,6 +5,7 @@ A containerized web application for browsing, searching, and saving favorite mov
 ## 🎯 Project Overview
 
 This is a semester project demonstrating professional web application development:
+
 - **Architecture**: Microservices with containerized components
 - **Frontend**: React single-page application
 - **Backend**: RESTful API with Django
@@ -13,19 +14,20 @@ This is a semester project demonstrating professional web application developmen
 
 ## 📋 Tech Stack
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| **Backend** | Django REST Framework | 3.14+ |
-| **Frontend** | React + Vite | 18.x / 5.x |
-| **Database** | PostgreSQL | 15 |
-| **Cache** | Redis | 7 |
-| **Containerization** | Docker | latest |
-| **Orchestration** | Kubernetes | 1.26+ |
-| **CI/CD** | GitHub Actions | - |
+| Component            | Technology            | Version    |
+| -------------------- | --------------------- | ---------- |
+| **Backend**          | Django REST Framework | 3.14+      |
+| **Frontend**         | React + Vite          | 18.x / 5.x |
+| **Database**         | PostgreSQL            | 15         |
+| **Cache**            | Redis                 | 7          |
+| **Containerization** | Docker                | latest     |
+| **Orchestration**    | Kubernetes            | 1.26+      |
+| **CI/CD**            | GitHub Actions        | -          |
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Docker & Docker Compose installed
 - Git
 - (Optional) Python 3.11+, Node.js 20+ for local dev
@@ -216,6 +218,7 @@ docker-compose exec frontend npm run test
 ## 🐛 Troubleshooting
 
 ### Services won't start?
+
 ```bash
 # Check service logs
 docker-compose logs backend
@@ -227,6 +230,7 @@ docker-compose build --no-cache
 ```
 
 ### Database connection error?
+
 ```bash
 # Ensure DB is healthy
 docker-compose exec db psql -U postgres -c "SELECT 1"
@@ -236,6 +240,7 @@ docker-compose exec backend python manage.py migrate
 ```
 
 ### Port already in use?
+
 ```bash
 # Change ports in docker-compose.yml or kill existing process
 # Then restart: docker-compose up

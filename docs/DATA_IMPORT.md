@@ -60,6 +60,7 @@ release_date,revenue,runtime,spoken_languages,status,tagline,title,vote_average,
 ```
 
 **Example first row**:
+
 ```
 27000000,"[{""id"": 28, ""name"": ""Action""}]","http://...",19995,[...],en,Avatar,
 "In the 22nd century, a paraplegic Marine is dispatched to the moon Pandora...",150.437,/...,
@@ -91,16 +92,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         csv_path = options['csv']
-        
+
         self.stdout.write(f'Starting import from {csv_path}...')
-        
+
         try:
             with open(csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
-                
+
                 movies_to_create = []
                 skipped = 0
-                
+
                 for row in reader:
                     try:
                         # Parse genres from JSON string
@@ -112,7 +113,7 @@ class Command(BaseCommand):
                                 genres = [g['name'] for g in genres_list if 'name' in g]
                             except json.JSONDecodeError:
                                 genres = []
-                        
+
                         # Create Movie object
                         movie = Movie(
                             title=row.get('title', 'Unknown'),
@@ -125,7 +126,7 @@ class Command(BaseCommand):
                             revenue=int(row.get('revenue', 0)) or 0,
                         )
                         movies_to_create.append(movie)
-                        
+
                     except Exception as e:
                         self.stdout.write(
                             self.style.WARNING(
@@ -133,7 +134,7 @@ class Command(BaseCommand):
                             )
                         )
                         skipped += 1
-                
+
                 # Bulk create (much faster than save() for each)
                 if movies_to_create:
                     Movie.objects.bulk_create(movies_to_create, batch_size=1000)
@@ -142,12 +143,12 @@ class Command(BaseCommand):
                             f'✓ Successfully imported {len(movies_to_create)} movies'
                         )
                     )
-                
+
                 if skipped > 0:
                     self.stdout.write(
                         self.style.WARNING(f'⚠ Skipped {skipped} rows due to errors')
                     )
-                
+
         except FileNotFoundError:
             self.stdout.write(
                 self.style.ERROR(
@@ -262,19 +263,23 @@ curl "http://localhost:8000/api/movies/?search=inception"
 ### Issues & Solutions
 
 **Problem**: Import takes very long (> 10 minutes)
+
 - **Solution**: CSV rows processed in batches; check `docker-compose logs backend` for errors
 
 **Problem**: Movies not appearing in UI
-- **Solution**: 
+
+- **Solution**:
   1. Verify count: `docker-compose exec backend python manage.py shell`
   2. Check API: `curl http://localhost:8000/api/movies/`
   3. Restart services: `docker-compose restart backend`
 
 **Problem**: "poster_path" fields are missing/null
+
 - **Solution**: This is expected; Kaggle CSV has poster URLs, but some may be incomplete
   - Frontend displays placeholder image for missing posters
 
 **Problem**: Duplicate movies in database
+
 - **Solution**: Run `import_movies` again; it appends, doesn't replace
   - To clear and reimport:
     ```bash
@@ -318,16 +323,16 @@ docker-compose exec backend python manage.py import_movies --csv movies_test.csv
 
 ## Data Fields Explanation
 
-| Field | Source | Type | Purpose |
-|-------|--------|------|---------|
-| `title` | movies.title | String | Movie name |
-| `release_date` | movies.release_date | Date | Release date (YYYY-MM-DD) |
-| `genres` | movies.genres (JSON) | Array | Genre names: ["Action", "Drama"] |
-| `vote_average` | movies.vote_average | Float | IMDb rating (0.0 - 10.0) |
-| `overview` | movies.overview | Text | Movie description/plot |
-| `poster_url` | movies.poster_path | String | TMDB image URL path |
-| `budget` | movies.budget | Integer | Production budget (USD) |
-| `revenue` | movies.revenue | Integer | Box office revenue (USD) |
+| Field          | Source               | Type    | Purpose                          |
+| -------------- | -------------------- | ------- | -------------------------------- |
+| `title`        | movies.title         | String  | Movie name                       |
+| `release_date` | movies.release_date  | Date    | Release date (YYYY-MM-DD)        |
+| `genres`       | movies.genres (JSON) | Array   | Genre names: ["Action", "Drama"] |
+| `vote_average` | movies.vote_average  | Float   | IMDb rating (0.0 - 10.0)         |
+| `overview`     | movies.overview      | Text    | Movie description/plot           |
+| `poster_url`   | movies.poster_path   | String  | TMDB image URL path              |
+| `budget`       | movies.budget        | Integer | Production budget (USD)          |
+| `revenue`      | movies.revenue       | Integer | Box office revenue (USD)         |
 
 ---
 
@@ -357,7 +362,8 @@ print(df.isnull().sum())     # Missing values per column
   Download from: https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata
 ```
 
-**Solution**: 
+**Solution**:
+
 1. Download CSV from Kaggle
 2. Copy to project root: `cp ~/Downloads/tmdb_5000_movies.csv .`
 3. Run again: `docker-compose exec backend python manage.py import_movies`
@@ -369,6 +375,7 @@ print(df.isnull().sum())     # Missing values per column
 ```
 
 **Solution**: CSV encoding issue
+
 ```bash
 # Check encoding
 file movies.csv
@@ -387,6 +394,7 @@ docker-compose exec backend python manage.py import_movies --csv movies_utf8.csv
 ```
 
 **Solution**: Another process using database
+
 ```bash
 # Restart database
 docker-compose restart db

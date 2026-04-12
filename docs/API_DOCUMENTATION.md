@@ -30,14 +30,14 @@ All responses are JSON with consistent structure:
 
 ## HTTP Status Codes
 
-| Code | Meaning | Example |
-|------|---------|---------|
-| 200 | OK - Request succeeded | GET /api/movies/ |
-| 201 | Created - Resource created | POST /api/favorites/ |
-| 204 | No Content - Success, no body | DELETE /api/favorites/1/ |
-| 400 | Bad Request - Invalid params | Missing required fields |
-| 404 | Not Found - Resource doesn't exist | GET /api/movies/99999/ |
-| 500 | Server Error - Internal error | Database connection failure |
+| Code | Meaning                            | Example                     |
+| ---- | ---------------------------------- | --------------------------- |
+| 200  | OK - Request succeeded             | GET /api/movies/            |
+| 201  | Created - Resource created         | POST /api/favorites/        |
+| 204  | No Content - Success, no body      | DELETE /api/favorites/1/    |
+| 400  | Bad Request - Invalid params       | Missing required fields     |
+| 404  | Not Found - Resource doesn't exist | GET /api/movies/99999/      |
+| 500  | Server Error - Internal error      | Database connection failure |
 
 ---
 
@@ -54,6 +54,7 @@ All responses are JSON with consistent structure:
 **Parameters**: None
 
 **Response (200 OK)**:
+
 ```json
 {
   "status": "healthy",
@@ -63,6 +64,7 @@ All responses are JSON with consistent structure:
 ```
 
 **cURL Example**:
+
 ```bash
 curl http://localhost:8000/api/health/
 ```
@@ -79,13 +81,14 @@ curl http://localhost:8000/api/health/
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `page` | integer | No | 1 | Page number (starts at 1) |
-| `limit` | integer | No | 20 | Results per page (1-100) |
-| `search` | string | No | - | Search by title or overview (case-insensitive) |
+| Parameter | Type    | Required | Default | Description                                    |
+| --------- | ------- | -------- | ------- | ---------------------------------------------- |
+| `page`    | integer | No       | 1       | Page number (starts at 1)                      |
+| `limit`   | integer | No       | 20      | Results per page (1-100)                       |
+| `search`  | string  | No       | -       | Search by title or overview (case-insensitive) |
 
 **Response (200 OK)**:
+
 ```json
 {
   "count": 5000,
@@ -138,11 +141,12 @@ curl "http://localhost:8000/api/movies/?search=action&page=1&limit=50"
 
 **Path Parameters**:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | integer | Yes | Movie ID (primary key) |
+| Parameter | Type    | Required | Description            |
+| --------- | ------- | -------- | ---------------------- |
+| `id`      | integer | Yes      | Movie ID (primary key) |
 
 **Response (200 OK)**:
+
 ```json
 {
   "id": 550,
@@ -159,6 +163,7 @@ curl "http://localhost:8000/api/movies/?search=action&page=1&limit=50"
 ```
 
 **Response (404 Not Found)**:
+
 ```json
 {
   "error": "Not found",
@@ -167,6 +172,7 @@ curl "http://localhost:8000/api/movies/?search=action&page=1&limit=50"
 ```
 
 **cURL Example**:
+
 ```bash
 curl http://localhost:8000/api/movies/550/
 ```
@@ -184,6 +190,7 @@ curl http://localhost:8000/api/movies/550/
 **Authentication**: Required (session token)
 
 **Request Body**:
+
 ```json
 {
   "movie_id": 550
@@ -191,10 +198,12 @@ curl http://localhost:8000/api/movies/550/
 ```
 
 **Validation**:
+
 - `movie_id` must be an existing movie
 - Duplicate favorites ignored (HTTP 409 Conflict or 201 if already exists)
 
 **Response (201 Created)**:
+
 ```json
 {
   "id": 42,
@@ -206,6 +215,7 @@ curl http://localhost:8000/api/movies/550/
 ```
 
 **Response (400 Bad Request)**:
+
 ```json
 {
   "error": "Invalid request",
@@ -216,6 +226,7 @@ curl http://localhost:8000/api/movies/550/
 ```
 
 **Response (404 Not Found)**:
+
 ```json
 {
   "error": "Movie not found",
@@ -224,6 +235,7 @@ curl http://localhost:8000/api/movies/550/
 ```
 
 **cURL Example**:
+
 ```bash
 # Assuming user has session token: abc123xyz
 curl -X POST http://localhost:8000/api/favorites/ \
@@ -246,16 +258,18 @@ curl -X POST http://localhost:8000/api/favorites/ \
 
 **Path Parameters**:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | integer | Yes | Favorite record ID (not movie ID) |
+| Parameter | Type    | Required | Description                       |
+| --------- | ------- | -------- | --------------------------------- |
+| `id`      | integer | Yes      | Favorite record ID (not movie ID) |
 
 **Response (204 No Content)**:
+
 ```
 (Empty body, HTTP 204)
 ```
 
 **Response (404 Not Found)**:
+
 ```json
 {
   "error": "Not found",
@@ -264,6 +278,7 @@ curl -X POST http://localhost:8000/api/favorites/ \
 ```
 
 **Response (403 Forbidden)** (If favorite belongs to different user):
+
 ```json
 {
   "error": "Permission denied",
@@ -272,6 +287,7 @@ curl -X POST http://localhost:8000/api/favorites/ \
 ```
 
 **cURL Example**:
+
 ```bash
 curl -X DELETE http://localhost:8000/api/favorites/42/ \
   -H "Cookie: sessionid=abc123xyz"
@@ -291,12 +307,13 @@ curl -X DELETE http://localhost:8000/api/favorites/42/ \
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `page` | integer | No | 1 | Page number |
-| `limit` | integer | No | 20 | Results per page |
+| Parameter | Type    | Required | Default | Description      |
+| --------- | ------- | -------- | ------- | ---------------- |
+| `page`    | integer | No       | 1       | Page number      |
+| `limit`   | integer | No       | 20      | Results per page |
 
 **Response (200 OK)**:
+
 ```json
 {
   "count": 5,
@@ -330,6 +347,7 @@ curl -X DELETE http://localhost:8000/api/favorites/42/ \
 ```
 
 **Response (401 Unauthorized)** (If not authenticated):
+
 ```json
 {
   "error": "Authentication required",
@@ -338,6 +356,7 @@ curl -X DELETE http://localhost:8000/api/favorites/42/ \
 ```
 
 **cURL Example**:
+
 ```bash
 curl http://localhost:8000/api/favorites/ \
   -H "Cookie: sessionid=abc123xyz"
@@ -352,12 +371,14 @@ curl http://localhost:8000/api/favorites/ \
 ### Common Error Scenarios
 
 **Movie Not Found**
+
 ```
 GET /api/movies/99999/
 Response: 404 Not Found
 ```
 
 **Invalid Search**
+
 ```
 GET /api/movies/?search=<invalid>&page=abc
 Response: 400 Bad Request
@@ -370,6 +391,7 @@ Response: 400 Bad Request
 ```
 
 **Unauthorized Access**
+
 ```
 POST /api/favorites/
 Response: 401 Unauthorized
@@ -381,6 +403,7 @@ Response: 401 Unauthorized
 ## Rate Limiting (Future)
 
 Not implemented in current scope, but recommended for production:
+
 - Limit: 100 requests/minute per IP
 - Header: `X-RateLimit-Remaining: 75`
 
@@ -389,16 +412,19 @@ Not implemented in current scope, but recommended for production:
 ## Pagination Examples
 
 ### Example 1: Browse First 20 Movies
+
 ```bash
 curl "http://localhost:8000/api/movies/?page=1&limit=20"
 ```
 
 ### Example 2: Search + Paginate
+
 ```bash
 curl "http://localhost:8000/api/movies/?search=inception&page=1&limit=10"
 ```
 
 ### Example 3: Follow "next" Link
+
 ```bash
 # Get page 1
 curl "http://localhost:8000/api/movies/?page=1"

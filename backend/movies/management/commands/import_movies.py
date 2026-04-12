@@ -59,13 +59,21 @@ class Command(BaseCommand):
                         except (ValueError, TypeError):
                             revenue = 0
                         
+                        # Generate poster URL using a reliable image service
+                        # Use Picsum for consistent, cached images
+                        movie_id = row.get('id', '')
+                        if movie_id:
+                            poster_url = f"https://picsum.photos/500/750?random={movie_id}"
+                        else:
+                            poster_url = "https://picsum.photos/500/750?random=1"
+                        
                         movie = Movie(
                             title=row.get('title', 'Unknown')[:255],
                             release_date=row.get('release_date') or None,
                             genres=genre_names,
                             vote_average=vote_avg,
                             overview=row.get('overview', '')[:1000],
-                            poster_url=row.get('poster_path') or None,
+                            poster_url=poster_url,
                             budget=budget,
                             revenue=revenue
                         )

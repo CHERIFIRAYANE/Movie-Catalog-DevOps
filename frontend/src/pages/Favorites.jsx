@@ -3,21 +3,21 @@
  * Display user's saved favorite movies
  */
 
-import React from 'react'
-import MovieCard from '../components/MovieCard'
-import LoadingSpinner from '../components/LoadingSpinner'
+import React from "react";
+import MovieCard from "../components/MovieCard";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const Favorites = ({ favorites, loading, onRemoveFavorite }) => {
   const handleRemove = async (movieId) => {
-    const favorite = favorites.find(f => f.movie.id === movieId)
+    const favorite = favorites.find((f) => f.movie.id === movieId);
     if (favorite) {
       try {
-        await onRemoveFavorite(favorite.id)
+        await onRemoveFavorite(favorite.id);
       } catch (err) {
-        console.error('Failed to remove favorite:', err)
+        console.error("Failed to remove favorite:", err);
       }
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-dark-900 py-8">
@@ -28,7 +28,8 @@ const Favorites = ({ favorites, loading, onRemoveFavorite }) => {
             ❤️ My Favorite Movies
           </h2>
           <p className="text-slate-400 text-lg">
-            {favorites.length} {favorites.length === 1 ? 'movie' : 'movies'} saved
+            {favorites.length} {favorites.length === 1 ? "movie" : "movies"}{" "}
+            saved
           </p>
         </div>
 
@@ -38,7 +39,9 @@ const Favorites = ({ favorites, loading, onRemoveFavorite }) => {
         ) : favorites.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🎬</div>
-            <h3 className="text-2xl font-bold text-white mb-2">No favorites yet</h3>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              No favorites yet
+            </h3>
             <p className="text-slate-400 mb-6">
               Browse movies and click the heart to save your favorites!
             </p>
@@ -64,7 +67,7 @@ const Favorites = ({ favorites, loading, onRemoveFavorite }) => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Favorites
+export default Favorites;
