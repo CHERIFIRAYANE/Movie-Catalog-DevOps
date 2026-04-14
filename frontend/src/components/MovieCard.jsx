@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Heart, Star, Calendar } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Star, Calendar, AlertCircle } from "lucide-react";
 import FavoriteButton from "./FavoriteButton";
 
 const MovieCard = ({
@@ -11,6 +11,7 @@ const MovieCard = ({
   onMovieClick,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
   // Check if poster_url is already a full URL (http/https), if so use directly, otherwise prepend TMDB path
   const posterUrl = movie.poster_url
@@ -32,12 +33,12 @@ const MovieCard = ({
       whileHover={{ y: -10 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group rounded-xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 shadow-lg hover:shadow-2xl hover:shadow-primary-500/20 transition-all duration-300 cursor-pointer"
+      className="group rounded-xl overflow-hidden dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 light:bg-white/60 light:backdrop-blur-md light:border light:border-white/55 shadow-lg hover:shadow-2xl dark:hover:shadow-primary-500/20 light:hover:shadow-lg light:hover:shadow-slate-300/60 transition-all duration-300 cursor-pointer"
     >
       {/* Poster Container */}
       <div
         onClick={() => onMovieClick?.(movie.id)}
-        className="relative overflow-hidden aspect-[3/4.5] bg-slate-950 cursor-pointer"
+        className="relative overflow-hidden aspect-[3/4.5] dark:bg-slate-950 light:bg-slate-200 cursor-pointer transition-colors duration-300"
       >
         <motion.img
           src={posterUrl}
@@ -78,7 +79,7 @@ const MovieCard = ({
             movieId={movie.id}
             isFavorited={isFavorited}
             onFavorite={onFavorite}
-            onUnfavorite={onUnfavorite}
+            onUnfavorite={() => setShowRemoveConfirm(true)}
           />
         </motion.div>
       </div>
@@ -90,12 +91,12 @@ const MovieCard = ({
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
       >
-        <h3 className="font-semibold text-sm text-slate-100 truncate group-hover:text-primary-400 transition-colors line-clamp-2">
+        <h3 className="font-semibold text-sm dark:text-slate-100 light:text-slate-800 truncate group-hover:text-primary-500 transition-colors line-clamp-2">
           {movie.title}
         </h3>
 
         {/* Year */}
-        <div className="flex items-center gap-1 text-xs text-slate-400 mt-2">
+        <div className="flex items-center gap-1 text-xs dark:text-slate-400 light:text-slate-600 mt-2">
           <Calendar className="w-3.5 h-3.5" />
           <span>{year}</span>
         </div>
@@ -106,13 +107,13 @@ const MovieCard = ({
             {movie.genres.slice(0, 2).map((genre, idx) => (
               <span
                 key={idx}
-                className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded-full border border-slate-600/50 hover:border-primary-400/50 transition-colors"
+                className="text-xs dark:bg-slate-700/50 dark:text-slate-300 dark:border-slate-600/50 light:bg-slate-100 light:text-slate-700 light:border-slate-300 px-2 py-1 rounded-full border hover:border-primary-400/50 transition-colors"
               >
                 {genre}
               </span>
             ))}
             {movie.genres.length > 2 && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs dark:text-slate-500 light:text-slate-600">
                 +{movie.genres.length - 2}
               </span>
             )}
@@ -123,12 +124,80 @@ const MovieCard = ({
         {movie.vote_average > 8 && (
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="mt-3 inline-block bg-gradient-to-r from-emerald-600/20 to-teal-600/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-medium border border-emerald-500/30 hover:border-emerald-500/60 transition-colors"
+            className="mt-3 inline-block dark:bg-gradient-to-r dark:from-emerald-600/20 dark:to-teal-600/20 dark:text-emerald-400 dark:border-emerald-500/30 light:bg-emerald-100/80 light:text-emerald-700 light:border-emerald-300 px-3 py-1 rounded-full text-xs font-medium border hover:border-emerald-500/60 transition-colors"
           >
             ✨ Critically Acclaimed
           </motion.div>
         )}
       </motion.div>
+
+      {/* Remove Confirmation Modal */}
+      <AnimatePresence>
+        {showRemoveConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowRemoveConfirm(false);
+            }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-sm shadow-2xl border border-slate-700/50"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <AlertCircle className="w-6 h-6 text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  Remove from Favorites?
+                </h3>
+              </div>
+
+              <p className="text-slate-300 mb-6">
+                Are you sure you want to remove <strong>{movie.title}</strong>{" "}
+                from your favorites?
+              </p>
+
+              <div className="flex gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRemoveConfirm(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition duration-200"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await onUnfavorite(movie.id);
+                      setShowRemoveConfirm(false);
+                    } catch (err) {
+                      console.error("Failed to remove favorite:", err);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg font-semibold transition duration-200 shadow-lg shadow-red-500/30"
+                >
+                  Remove
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

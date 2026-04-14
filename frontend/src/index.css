@@ -12,6 +12,32 @@
 
 html {
   scroll-behavior: smooth;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Dark mode - DEFAULT */
+html {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background-attachment: fixed;
+  color-scheme: dark;
+  color: #cbd5e1;
+}
+
+/* Light mode - Glassmorphic */
+html.light {
+  background: linear-gradient(
+    135deg,
+    #e7edf5 0%,
+    #dfe8f3 28%,
+    #d5e1ef 52%,
+    #dde7f2 76%,
+    #e9eef6 100%
+  );
+  background-attachment: fixed;
+  color-scheme: light;
+  color: #0f172a;
 }
 
 body {
@@ -19,31 +45,41 @@ body {
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-  background-attachment: fixed;
-  color: #cbd5e1;
-  position: relative;
+  min-height: 100vh;
 }
 
-/* Modern scrollbar */
+/* ====== SCROLLBARS ====== */
 ::-webkit-scrollbar {
   width: 10px;
 }
 
-::-webkit-scrollbar-track {
+html ::-webkit-scrollbar-track {
   background: linear-gradient(180deg, #0f172a, #1e293b);
 }
 
-::-webkit-scrollbar-thumb {
+html ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #0ea5e9, #a855f7);
   border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+html ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #0284c7, #9333ea);
 }
 
-/* Typography */
+html.light ::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #f1f5f9, #e2e8f0);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #0284c7, #9333ea);
+  border-radius: 10px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0369a1, #7e22ce);
+}
+
+/* ====== TYPOGRAPHY ====== */
 h1,
 h2,
 h3,
@@ -53,7 +89,24 @@ h6 {
   font-family: "Poppins", system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: -0.5px;
+}
+
+html h1,
+html h2,
+html h3,
+html h4,
+html h5,
+html h6 {
   color: #f8fafc;
+}
+
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #0f172a;
 }
 
 h1 {
@@ -69,7 +122,7 @@ h3 {
   line-height: 1.4;
 }
 
-/* Movie grid - responsive */
+/* ====== MOVIE GRID ====== */
 .movie-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

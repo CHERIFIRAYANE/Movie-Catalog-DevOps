@@ -67,12 +67,16 @@ export default function Login({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
+    <div className="min-h-screen dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 light:bg-gradient-to-br light:from-white/40 light:to-white/20 light:backdrop-blur-md flex items-center justify-center px-4 transition-colors duration-300\">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Movie Catalog</h1>
-          <p className="text-slate-400">Sign in to your account</p>
+          <h1 className="text-4xl font-bold dark:text-white light:text-slate-900 mb-2 transition-colors duration-300">
+            Movie Catalog
+          </h1>
+          <p className="dark:text-slate-400 light:text-slate-600 transition-colors duration-300">
+            Sign in to your account
+          </p>
         </div>
 
         {/* Error Message */}
@@ -86,11 +90,11 @@ export default function Login({ onLoginSuccess }) {
         {/* Login Form */}
         <form
           onSubmit={handleLogin}
-          className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 space-y-4"
+          className="dark:bg-slate-800/50 light:bg-white/50 light:backdrop-blur-md dark:backdrop-blur dark:border-slate-700 light:border-white/30 border rounded-xl p-6 space-y-4 transition-colors duration-300\"
         >
           {/* Email Input */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium dark:text-slate-300 light:text-slate-700 mb-2 transition-colors duration-300\">
               Email
             </label>
             <div className="relative">

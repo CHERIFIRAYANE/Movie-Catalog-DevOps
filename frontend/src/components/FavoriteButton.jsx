@@ -13,7 +13,10 @@ const FavoriteButton = ({
 
   const isLarge = variant === "large";
 
-  const handleClick = async () => {
+  const handleClick = async (e) => {
+    // Prevent event from bubbling up to parent click handlers (e.g., modal open)
+    e.stopPropagation();
+
     setIsLoading(true);
     try {
       if (isFavorited) {

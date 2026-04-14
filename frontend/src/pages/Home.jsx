@@ -53,14 +53,14 @@ const Home = ({ favorites, onAddFavorite, onRemoveFavorite }) => {
   const memoizedSetSelectedMovieId = useCallback(setSelectedMovieId, []);
 
   return (
-    <div className="min-h-screen bg-dark-900 py-8">
+    <div className="min-h-screen bg-transparent dark:bg-dark-900 py-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-white mb-4">
+          <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4 transition-colors duration-300">
             Discover Amazing Movies
           </h2>
-          <p className="text-slate-400 text-lg">
+          <p className="text-slate-700 dark:text-slate-400 text-lg transition-colors duration-300">
             Browse {count.toLocaleString()} movies, search for your favorites,
             and build your collection
           </p>

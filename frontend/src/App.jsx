@@ -81,8 +81,10 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
+      <div className="min-h-screen dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 light:bg-transparent flex items-center justify-center transition-colors duration-300\">
+        <div className="dark:text-slate-400 light:text-slate-600 dark:bg-slate-800/50 light:bg-white/40 light:backdrop-blur-md px-6 py-4 rounded-lg">
+          Loading...
+        </div>
       </div>
     );
   }
@@ -102,7 +104,7 @@ function App() {
 
   // Protected routes - with header
   const protectedRoutesContent = (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 light:bg-transparent transition-colors duration-300">
       {/* API Status Banner */}
       <AnimatePresence>
         <motion.div
@@ -113,29 +115,31 @@ function App() {
             border-b transition-all duration-300
             ${
               apiStatus.healthy
-                ? "bg-gradient-to-r from-emerald-950/50 to-teal-950/50 border-emerald-600/30"
-                : "bg-gradient-to-r from-red-950/50 to-rose-950/50 border-red-600/30"
+                ? "dark:bg-gradient-to-r dark:from-emerald-950/50 dark:to-teal-950/50 dark:border-emerald-600/30 light:bg-emerald-500/10 light:border-emerald-300/30 light:backdrop-blur-md"
+                : "dark:bg-gradient-to-r dark:from-red-950/50 dark:to-rose-950/50 dark:border-red-600/30 light:bg-red-500/10 light:border-red-300/30 light:backdrop-blur-md"
             }
-            backdrop-blur-xl
+            dark:backdrop-blur-xl
           `}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-center gap-3 text-sm">
               {apiStatus.healthy ? (
                 <>
-                  <CheckCircle className="w-5 h-5 text-emerald-400" />
-                  <span className="text-emerald-400 font-medium">
+                  <CheckCircle className="w-5 h-5 dark:text-emerald-400 light:text-emerald-600" />
+                  <span className="dark:text-emerald-400 light:text-emerald-700 font-medium">
                     API Connected
                   </span>
-                  <span className="text-emerald-300/70 text-xs ml-2">
+                  <span className="dark:text-emerald-300/70 light:text-emerald-600/70 text-xs ml-2">
                     {apiStatus.message}
                   </span>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="w-5 h-5 text-red-400 animate-pulse" />
-                  <span className="text-red-400 font-medium">API Offline</span>
-                  <span className="text-red-300/70 text-xs ml-2">
+                  <AlertCircle className="w-5 h-5 dark:text-red-400 light:text-red-600 animate-pulse" />
+                  <span className="dark:text-red-400 light:text-red-700 font-medium">
+                    API Offline
+                  </span>
+                  <span className="dark:text-red-300/70 light:text-red-600/70 text-xs ml-2">
                     {apiStatus.message}
                   </span>
                 </>

@@ -56,8 +56,21 @@ export const useFavorites = () => {
     }
   };
 
-  const removeFavorite = async (favoriteId) => {
+  const removeFavorite = async (movieIdOrFavoriteId) => {
     try {
+      // Support both movieId and favoriteId for backwards compatibility
+      // If it's a movieId, find the favorite record id first
+      let favoriteId = movieIdOrFavoriteId;
+
+      const favorite = favorites.find(
+        (f) =>
+          f.id === movieIdOrFavoriteId || f.movie?.id === movieIdOrFavoriteId,
+      );
+
+      if (favorite) {
+        favoriteId = favorite.id;
+      }
+
       await removeFromFavorites(favoriteId);
       setFavorites(favorites.filter((f) => f.id !== favoriteId));
     } catch (err) {

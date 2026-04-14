@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, Calendar, Clock, DollarSign, Globe } from "lucide-react";
+import {
+  X,
+  Star,
+  Calendar,
+  Clock,
+  DollarSign,
+  Globe,
+  AlertCircle,
+} from "lucide-react";
 import { getMovieDetail } from "../services/api";
 import LoadingSpinner from "./LoadingSpinner";
 import FavoriteButton from "./FavoriteButton";
@@ -15,6 +23,7 @@ const MovieModal = ({
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
   useEffect(() => {
     const fetchMovieDetail = async () => {
@@ -251,13 +260,79 @@ const MovieModal = ({
                   movieId={movie.id}
                   isFavorited={isFavorited}
                   onFavorite={onFavorite}
-                  onUnfavorite={onUnfavorite}
+                  onUnfavorite={() => setShowRemoveConfirm(true)}
                   variant="large"
                 />
               </div>
             </motion.div>
           </div>
         </motion.div>
+
+        {/* Remove Confirmation Modal */}
+        {showRemoveConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowRemoveConfirm(false);
+            }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-sm shadow-2xl border border-slate-700/50"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <AlertCircle className="w-6 h-6 text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  Remove from Favorites?
+                </h3>
+              </div>
+
+              <p className="text-slate-300 mb-6">
+                Are you sure you want to remove <strong>{movie.title}</strong>{" "}
+                from your favorites?
+              </p>
+
+              <div className="flex gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRemoveConfirm(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition duration-200"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await onUnfavorite(movie.id);
+                      setShowRemoveConfirm(false);
+                    } catch (err) {
+                      console.error("Failed to remove favorite:", err);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg font-semibold transition duration-200 shadow-lg shadow-red-500/30"
+                >
+                  Remove
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
