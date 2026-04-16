@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: movie-catalog
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - serviceaccounts.yaml
+  - rbac.yaml
+  - networkpolicy.yaml
+  - postgres.yaml
+  - redis.yaml
+  - elasticsearch.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
+  - reliability.yaml
+  - networkpolicy-backup.yaml
+  - bootstrap.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: movie-catalog

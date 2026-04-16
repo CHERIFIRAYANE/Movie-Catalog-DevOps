@@ -1,0 +1,127 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: movies-bootstrap
+  namespace: movie-catalog
+  labels:
+    app.kubernetes.io/name: bootstrap
+spec:
+  ttlSecondsAfterFinished: 86400
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bootstrap
+    spec:
+      serviceAccountName: backend-sa
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: seed-copy
+          image: projetconteneurisationweb-dataset:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - cp /seed/tmdb_5000_movies.csv /work/tmdb_5000_movies.csv
+          volumeMounts:
+            - name: seed
+              mountPath: /work
+      containers:
+        - name: bootstrap
+          image: projetconteneurisationweb-backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              COUNT=$(python manage.py shell -c "from movies.models import Movie; print(Movie.objects.count())")
+              echo "Current movie count: $COUNT"
+              if [ "$COUNT" = "0" ]; then
+                echo "Importing movies from dataset..."
+                python manage.py import_movies --csv /seed/tmdb_5000_movies.csv
+                echo "Indexing movies into Elasticsearch..."
+                python manage.py index_movies --clear
+                echo "Bootstrap completed"
+              else
+                echo "Movies already present; skipping import/index"
+              fi
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRET_KEY
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DEBUG
+            - name: DATABASE_ENGINE
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_ENGINE
+            - name: DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_NAME
+            - name: DATABASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DATABASE_PASSWORD
+            - name: DATABASE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DATABASE_PORT
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: REDIS_URL
+            - name: ELASTICSEARCH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: ELASTICSEARCH_HOST
+            - name: ELASTICSEARCH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: ELASTICSEARCH_PORT
+            - name: ALLOWED_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: ALLOWED_HOSTS
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "256Mi"
+            limits:
+              cpu: "700m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: seed
+              mountPath: /seed
+      volumes:
+        - name: seed
+          emptyDir: {}

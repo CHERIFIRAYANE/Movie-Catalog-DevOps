@@ -1,0 +1,28 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-read-config
+  namespace: movie-catalog
+  labels:
+    app.kubernetes.io/part-of: movie-catalog
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-read-config
+  namespace: movie-catalog
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: movie-catalog
+subjects:
+  - kind: ServiceAccount
+    name: backend-sa
+    namespace: movie-catalog
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: app-read-config

@@ -1,0 +1,146 @@
+name: CI-CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  backend-ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Django system check
+        env:
+          DEBUG: "False"
+          SECRET_KEY: ci-secret-key
+          DATABASE_ENGINE: django.db.backends.sqlite3
+          DATABASE_NAME: /tmp/ci.sqlite3
+          REDIS_URL: redis://localhost:6379/0
+          ALLOWED_HOSTS: localhost,127.0.0.1
+        run: |
+          python manage.py check --deploy --fail-level WARNING
+
+      - name: Python syntax check
+        run: python -m compileall .
+
+  frontend-ci:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+  k8s-validate:
+    name: Kubernetes Manifest Validation
+    runs-on: ubuntu-latest
+    needs: [backend-ci, frontend-ci]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.32.2
+
+      - name: Validate kustomize render
+        run: kubectl kustomize k8s/overlays/local > /tmp/rendered.yaml
+
+      - name: Validate rendered resources are not empty
+        run: test -s /tmp/rendered.yaml
+
+  docker-build:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: [backend-ci, frontend-ci]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: movie-catalog-backend:ci
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: movie-catalog-frontend:ci
+
+  publish-images:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    needs: [k8s-validate, docker-build]
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/movie-catalog-backend:${{ github.sha }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/movie-catalog-frontend:${{ github.sha }}
