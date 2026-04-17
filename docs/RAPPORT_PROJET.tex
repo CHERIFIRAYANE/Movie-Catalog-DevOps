@@ -1,0 +1,362 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit,backgrounds}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black,
+  pdftitle={Rapport Projet Containerisation Web},
+  pdfauthor={Rayane CHERIFI \& SEBA Abdelwahab}
+}
+
+\setstretch{1.08}
+\setlist[itemize]{leftmargin=1.4em,itemsep=0.2em,topsep=0.25em}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=0.2em,topsep=0.25em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Projet Containerisation Web}
+\rhead{Movie Catalog}
+\cfoot{\thepage}
+
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  {\Large \textbf{Rapport de Projet}}\\[0.4cm]
+  {\LARGE \textbf{Conception et Deploiement d'une Application Web}}\\[0.2cm]
+  {\LARGE \textbf{Orientee Donnees et API}}\\[1.2cm]
+
+  {\large UE: CRV - Containerisation et Deploiement}\\[0.3cm]
+  {\large Annee universitaire 2025-2026}\\[1.0cm]
+
+  \begin{tabular}{rl}
+    \textbf{Projet:} & Movie Catalog Web Application \\
+    \textbf{Binome:} & Rayane CHERIFI, SEBA Abdelwahab \\
+    \textbf{Date limite:} & 17 mai 2026 \\
+    \textbf{Date du rapport:} & \today \\
+  \end{tabular}
+
+  \vfill
+
+  \begin{minipage}{0.95\textwidth}
+  \small
+  Ce rapport presente la conception, l'implementation et le deploiement d'une application web complete,
+  conformement au cahier des charges du sujet \textit{``Conception et deploiement d'une application Web orientee donnees et API''}.
+  L'accent est mis sur la justification technique, la robustesse du deploiement et la reproductibilite du lancement.
+  \end{minipage}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Contexte, objectifs et perimetre}
+
+Le projet s'inscrit dans une logique professionnelle: il ne s'agit pas uniquement de coder une interface,
+mais de livrer un systeme deployable de bout en bout (front-end, back-end, donnees, conteneurisation, orchestration,
+validation, documentation).
+
+\subsection{Objectif fonctionnel}
+
+L'application \textbf{Movie Catalog} permet:
+\begin{itemize}
+  \item d'afficher un catalogue de films issu d'un dataset reel (TMDB 5000),
+  \item de rechercher des films (recherche simple + recherche avancee),
+  \item de consulter les details d'un film,
+  \item de gerer des favoris pour des utilisateurs authentifies,
+  \item d'exposer ces donnees via une API HTTP structuree.
+\end{itemize}
+
+\subsection{Objectif technique}
+
+Le projet devait absolument demontrer:
+\begin{itemize}
+  \item une architecture claire \textit{front-end / back-end / base de donnees},
+  \item l'usage concret de Docker et Kubernetes,
+  \item la gestion de configuration (ConfigMaps/Secrets),
+  \item une demarche d'automatisation (scripts de lancement + CI/CD),
+  \item une capacite de justification des choix techniques.
+\end{itemize}
+
+\section{Conformite explicite au cahier des charges}
+
+Le tableau suivant mappe les exigences du sujet avec des preuves concretes d'implementation.
+
+\begin{longtable}{p{0.33\textwidth} p{0.61\textwidth}}
+\toprule
+\textbf{Exigence du sujet} & \textbf{Reponse du projet} \\
+\midrule
+\endhead
+Catalogue de films dynamique & Endpoint REST \texttt{/api/movies/} avec pagination DRF, affichage React (grille de films). \\
+Barre de recherche & Recherche standard (parametre \texttt{search}) + recherche avancee via Elasticsearch (endpoint \texttt{/api/search/}). \\
+Architecture front/back/data & React + Vite (front), Django REST (back), PostgreSQL + Redis + Elasticsearch (data/cache/recherche). \\
+API HTTP exposee et consommee & API DRF documentee, consommee via Axios (intercepteurs JWT, refresh automatique des tokens). \\
+Conteneurisation Docker & Dockerfiles multi-stage front/back + \texttt{docker-compose.yml} pour environnement local. \\
+Deploiement Kubernetes & Kustomize overlay local, Deployments, StatefulSets, Services, Ingress, ConfigMap, Secret, NetworkPolicies. \\
+CI/CD & Workflow GitHub Actions: checks backend/frontend, validation K8s render, build d'images Docker, publication manuelle. \\
+Script de lancement simple & Scripts \texttt{run/validate/stop} pour Windows, Linux, macOS avec verification de sante. \\
+\bottomrule
+\end{longtable}
+
+\section{Architecture technique proposee}
+
+\subsection{Schema d'architecture (professionnel et complet)}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+  node distance=0.9cm and 1.1cm,
+  box/.style={draw, rounded corners, align=center, minimum width=2.8cm, minimum height=1cm, fill=blue!5},
+  infra/.style={draw, rounded corners, align=center, minimum width=3.0cm, minimum height=1cm, fill=green!6},
+  data/.style={draw, rounded corners, align=center, minimum width=2.7cm, minimum height=1cm, fill=orange!8},
+  sec/.style={draw, rounded corners, align=center, fill=red!5},
+  arr/.style={-Latex, thick}
+]
+
+\node[box] (client) {Navigateur\\Utilisateur};
+\node[infra, below=of client] (ing) {Ingress NGINX\\(host: movie.local)};
+\node[box, below left=of ing] (front) {Frontend\\React + Vite\\(Nginx)};
+\node[box, below right=of ing] (back) {Backend API\\Django REST\\Gunicorn};
+
+\node[data, below left=1.1cm and 0.1cm of back] (pg) {PostgreSQL 15\\StatefulSet + PVC};
+\node[data, below=1.1cm of back] (redis) {Redis 7\\cache/session};
+\node[data, below right=1.1cm and 0.1cm of back] (es) {Elasticsearch 8.11\\index recherche};
+
+\node[infra, right=2.0cm of back] (boot) {Jobs Kubernetes\\migration + bootstrap\\import + index};
+\node[sec, below=0.6cm of es] (netpol) {NetworkPolicies\\default deny + flux explicites};
+\node[sec, above=0.6cm of pg] (conf) {ConfigMap + Secrets\\(config et credentials)};
+
+\draw[arr] (client) -- (ing);
+\draw[arr] (ing) -- node[left,sloped,above]{\small /} (front);
+\draw[arr] (ing) -- node[right,sloped,above]{\small /api} (back);
+\draw[arr] (front) -- node[above]{\small HTTP/JSON} (back);
+
+\draw[arr] (back) -- (pg);
+\draw[arr] (back) -- (redis);
+\draw[arr] (back) -- (es);
+
+\draw[arr,dashed] (boot) -- (back);
+\draw[arr,dashed] (boot) -- (pg);
+\draw[arr,dashed] (boot) -- (es);
+
+\begin{scope}[on background layer]
+  \node[draw=gray!50, rounded corners, fit=(ing) (front) (back) (pg) (redis) (es) (boot) (netpol) (conf), inner sep=0.35cm] (cluster) {};
+  \node[above right=0.05cm and -0.2cm of cluster.north west, anchor=south west] {\small Cluster Kubernetes (namespace \texttt{movie-catalog})};
+\end{scope}
+\end{tikzpicture}
+\caption{Architecture logique et deploiement cible}
+\end{figure}
+
+\subsection{Lecture architecturale}
+
+L'architecture est volontairement \textbf{separee par responsabilite}:
+\begin{itemize}
+  \item le front gere l'experience utilisateur et la presentation,
+  \item le back centralise les regles metier et l'exposition API,
+  \item PostgreSQL garantit la persistence relationnelle,
+  \item Redis optimise les temps d'acces,
+  \item Elasticsearch apporte une recherche plus riche que le simple \texttt{ILIKE} SQL,
+  \item Kubernetes orchestre la disponibilite, la resilience et l'isolation reseau.
+\end{itemize}
+
+Ce decoupage est realiste en contexte professionnel et rend chaque composant testable/maintenable independamment.
+
+\section{Justification concrete des choix technologiques}
+
+\subsection{Back-end: Django REST Framework}
+
+\textbf{Arguments concrets:}
+\begin{itemize}
+  \item DRF fournit rapidement des endpoints robustes (ViewSets, serialisation, pagination standard).
+  \item La securite native Django est exploitee (validation, middleware de securite, gestion utilisateurs).
+  \item Le code expose des endpoints metier clairs: \texttt{/api/movies/}, \texttt{/api/favorites/}, \texttt{/api/health/}, \texttt{/api/search/}.
+  \item L'application integre JWT (access+refresh) avec refresh automatique cote front.
+\end{itemize}
+
+\textbf{Compromis assume:} Django est plus verbeux que FastAPI pour certains cas, mais il reduit le risque de dette technique
+sur un projet avec authentification, administration et persistance relationnelle.
+
+\subsection{Front-end: React + Vite}
+
+\textbf{Arguments concrets:}
+\begin{itemize}
+  \item React permet la reutilisation de composants (cards, modal, pagination, favoris).
+  \item Vite accelere le cycle de developpement et le build de production.
+  \item L'API est consommee via Axios avec gestion centralisee des erreurs et des tokens.
+  \item Le front implemente des etats utiles a la demo: banniere de sante API, parcours login/register/verification.
+\end{itemize}
+
+\subsection{Donnees: PostgreSQL + Redis + Elasticsearch}
+
+\textbf{Arguments concrets:}
+\begin{itemize}
+  \item \textbf{PostgreSQL} correspond au besoin relationnel (films, utilisateurs, favoris) avec index metier.
+  \item \textbf{Redis} est utilise comme cache applicatif (liste/detail/requetes frequentes), ce qui baisse la charge SQL.
+  \item \textbf{Elasticsearch} est reserve a la recherche avancee (filtres genres/annee/note, pagination, autocomplete).
+\end{itemize}
+
+\textbf{Impact pedagogique et professionnel:} la combinaison SQL + cache + moteur de recherche reproduit un pattern d'architecture
+reel pour applications data-centric.
+
+\subsection{Orchestration: Kubernetes}
+
+\textbf{Arguments concrets observes dans les manifests:}
+\begin{itemize}
+  \item \texttt{Deployment} front/back en \textbf{2 replicas} chacun (rolling update, disponibilite).
+  \item \texttt{StatefulSet} pour PostgreSQL et Elasticsearch (identite stable + volumes persistants).
+  \item \texttt{ConfigMap} pour la configuration non sensible, \texttt{Secret} pour mots de passe et cles.
+  \item \texttt{Ingress} pour le routage \texttt{/} vers front et \texttt{/api} vers back.
+  \item \texttt{NetworkPolicy} en mode \textit{default deny} puis ouvertures minimales explicites.
+\end{itemize}
+
+Ce choix est coherent avec le sujet qui impose Docker + Kubernetes et valorise la justification de l'architecture.
+
+\section{Fonctionnalites realisees et demonstration}
+
+\subsection{Fonctionnalites minimales (obligatoires)}
+
+\begin{itemize}
+  \item Catalogue dynamique des films (API paginee + affichage front).
+  \item Barre de recherche (parametre \texttt{search} + page dediee de recherche avancee).
+  \item Communication front/back fonctionnelle (health-check affiche dans l'UI).
+  \item Gestion d'erreurs minimale (retours API codes HTTP, erreurs front capturees).
+\end{itemize}
+
+\subsection{Fonctionnalites avancees (valorisees)}
+
+\begin{itemize}
+  \item Favoris utilisateur (creation/suppression, protection par authentification).
+  \item Recherche avancee et autocomplete avec Elasticsearch.
+  \item Cache Redis sur endpoints critiques.
+  \item Pagination configurable et tri cote API.
+  \item Authentification JWT + verification email.
+\end{itemize}
+
+\subsection{Source de donnees et import}
+
+Le projet exploite \texttt{tmdb\_5000\_movies.csv}. L'import est automatise via commande Django,
+puis complete par un indexage Elasticsearch. En environnement Kubernetes, un job \texttt{movies-bootstrap}:
+\begin{enumerate}
+  \item attend la disponibilite DB,
+  \item importe les films si la table est vide,
+  \item indexe vers Elasticsearch avec retries,
+  \item echoue explicitement si l'indexation n'aboutit pas.
+\end{enumerate}
+
+Ce comportement rend le systeme relancable sans reconfiguration manuelle, ce qui est un point fort pour l'evaluation.
+
+\section{Conteneurisation, deploiement et exploitation}
+
+\subsection{Docker}
+
+\begin{itemize}
+  \item Dockerfile backend multi-stage (builder Python puis runtime minimal), execution non-root.
+  \item Dockerfile frontend multi-stage (build Node, runtime Nginx + healthcheck).
+  \item \texttt{docker-compose.yml} pour le mode local (db, redis, elasticsearch, backend, frontend).
+\end{itemize}
+
+\subsection{Kubernetes et robustesse operationnelle}
+
+Le deploiement Kubernetes inclut des mecanismes de fiabilite concrets:
+\begin{itemize}
+  \item probes \texttt{startup/readiness/liveness} sur front et back,
+  \item retries de jobs (migration, bootstrap),
+  \item \texttt{PodDisruptionBudget} pour front/back,
+  \item \texttt{CronJob} de backup PostgreSQL toutes les 6 heures,
+  \item ressources requests/limits definies pour chaque composant.
+\end{itemize}
+
+\subsection{Automatisation de lancement}
+
+Le projet respecte l'esprit ``lancement simple'' demande dans le sujet:
+\begin{itemize}
+  \item scripts \texttt{run/validate/stop} pour Windows, Linux, macOS,
+  \item verification prerequis (docker, kubectl, cluster),
+  \item construction images + apply kustomize + attentes de readiness,
+  \item ouverture de tunnels locaux et script de validation final.
+\end{itemize}
+
+\section{CI/CD et qualite de livraison}
+
+Le workflow GitHub Actions couvre les etapes essentielles:
+\begin{enumerate}
+  \item \textbf{backend-ci}: installation deps Python, \texttt{manage.py check --deploy}, verification syntaxe,
+  \item \textbf{frontend-ci}: \texttt{npm ci} puis build,
+  \item \textbf{k8s-validate}: rendu kustomize et verification non-vide,
+  \item \textbf{docker-build}: build des images backend/frontend,
+  \item \textbf{publish-images} (manuel): push Docker Hub.
+\end{enumerate}
+
+\textbf{Interpretation professionnelle:} le pipeline n'est pas cosmetique; il detecte des regressions de configuration,
+assure la buildabilite et valide la chaine de deploiement.
+
+\section{Securite, limites et ameliorations}
+
+\subsection{Points securite deja presents}
+\begin{itemize}
+  \item Separation ConfigMap/Secrets,
+  \item Politique reseau restrictive (deny-all puis exceptions minimales),
+  \item Conteneur backend execute en non-root,
+  \item JWT court + refresh token,
+  \item verification email cote inscription.
+\end{itemize}
+
+\subsection{Limites identifiees}
+\begin{itemize}
+  \item Pas de monitoring centralise (Prometheus/Grafana) dans le scope courant,
+  \item Pas de tests d'integration end-to-end automatiques,
+  \item Publication Docker en mode manuel (\texttt{workflow\_dispatch}) et non sur chaque push,
+  \item Configuration locale orientee demo (pas de TLS de production actif dans le cluster local).
+\end{itemize}
+
+\subsection{Plan d'amelioration credible}
+\begin{enumerate}
+  \item Ajouter tests API et tests front automatises au pipeline,
+  \item Integrer observabilite (metrics + dashboards),
+  \item Ajouter deploiement automatise vers un cluster cible (staging),
+  \item Renforcer politique de secrets (external secret manager),
+  \item Mettre en place une strategie de rollback versionnee.
+\end{enumerate}
+
+\section{Conclusion}
+
+Le projet repond au cahier des charges de maniere complete et argumentee:
+\begin{itemize}
+  \item architecture coherente et justifiee,
+  \item fonctionnalites minimales implementees + options valorisees,
+  \item conteneurisation Docker et orchestration Kubernetes operationnelles,
+  \item documentation, scripts et pipeline permettant une evaluation reproductible.
+\end{itemize}
+
+Au-dela de la simple ``application qui tourne'', le livrable demontre une approche d'ingenierie logicielle
+structuree: choix explicites, compromis assumes, automatisation, et maitrise de la chaine complete du developpement au deploiement.
+
+\vspace{0.5cm}
+\noindent\textbf{Annexe pratique (commande demo rapide):}
+\begin{itemize}
+  \item Windows: \texttt{run-project.bat} puis \texttt{validate-project.bat}
+  \item Linux: \texttt{./scripts/linux/run-project.sh} puis \texttt{./scripts/linux/validate-project.sh}
+  \item macOS: \texttt{./scripts/macos/run-project.sh} puis \texttt{./scripts/macos/validate-project.sh}
+\end{itemize}
+
+\end{document}

@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: bootstrap
 spec:
   ttlSecondsAfterFinished: 86400
-  backoffLimit: 1
+  backoffLimit: 4
   template:
     metadata:
       labels:
@@ -40,17 +40,49 @@ spec:
             - -c
             - |
               set -e
+
+              echo "Waiting for database connectivity..."
+              DB_READY=0
+              for i in $(seq 1 30); do
+                if python manage.py shell -c "from django.db import connection; connection.cursor(); print('ok')" >/dev/null 2>&1; then
+                  DB_READY=1
+                  break
+                fi
+                echo "DB not ready yet (attempt $i/30), retrying in 5s..."
+                sleep 5
+              done
+
+              if [ "$DB_READY" != "1" ]; then
+                echo "ERROR: Database did not become ready in time"
+                exit 1
+              fi
+
               COUNT=$(python manage.py shell -c "from movies.models import Movie; print(Movie.objects.count())")
               echo "Current movie count: $COUNT"
               if [ "$COUNT" = "0" ]; then
                 echo "Importing movies from dataset..."
                 python manage.py import_movies --csv /seed/tmdb_5000_movies.csv
-                echo "Indexing movies into Elasticsearch..."
-                python manage.py index_movies --clear
-                echo "Bootstrap completed"
               else
-                echo "Movies already present; skipping import/index"
+                echo "Movies already present; skipping import"
               fi
+
+              echo "Indexing movies into Elasticsearch..."
+              INDEX_OK=0
+              for i in $(seq 1 20); do
+                if python manage.py index_movies --clear; then
+                  INDEX_OK=1
+                  break
+                fi
+                echo "Elasticsearch not ready yet (attempt $i/20), retrying in 5s..."
+                sleep 5
+              done
+
+              if [ "$INDEX_OK" != "1" ]; then
+                echo "ERROR: Failed to index movies into Elasticsearch"
+                exit 1
+              fi
+
+              echo "Bootstrap completed"
           env:
             - name: SECRET_KEY
               valueFrom:

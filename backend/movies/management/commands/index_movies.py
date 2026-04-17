@@ -6,7 +6,7 @@ Usage:
     python manage.py index_movies --clear  # Clear index first
     python manage.py index_movies --batch-size 50
 """
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db.models import QuerySet
 from movies.models import Movie
 from movies.search import MovieSearchService
@@ -47,12 +47,9 @@ class Command(BaseCommand):
             # Check Elasticsearch connection
             health = search_service.get_health()
             if health['status'] != 'connected':
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"❌ Elasticsearch not connected: {health.get('error', 'Unknown error')}"
-                    )
-                )
-                return
+                message = f"Elasticsearch not connected: {health.get('error', 'Unknown error')}"
+                self.stdout.write(self.style.ERROR(f"❌ {message}"))
+                raise CommandError(message)
             
             self.stdout.write(
                 self.style.SUCCESS('✓ Elasticsearch connected')
@@ -107,3 +104,4 @@ class Command(BaseCommand):
                 self.style.ERROR(f'❌ Error: {str(e)}')
             )
             logger.exception('Error in index_movies command')
+            raise CommandError(str(e))

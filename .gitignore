@@ -48,6 +48,7 @@ Thumbs.db
 *.log
 .coverage
 htmlcov/
+.run-state/
 
 # Dataset
 movies.csv

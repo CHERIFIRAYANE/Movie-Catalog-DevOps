@@ -48,6 +48,16 @@ jobs:
       - name: Python syntax check
         run: python -m compileall .
 
+      - name: Run backend tests
+        env:
+          DEBUG: "False"
+          SECRET_KEY: "ci-prod-like-secret-key-with-more-than-fifty-characters-123456789"
+          DATABASE_ENGINE: django.db.backends.sqlite3
+          DATABASE_NAME: /tmp/ci-tests.sqlite3
+          REDIS_URL: redis://localhost:6379/0
+          ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py test
+
   frontend-ci:
     name: Frontend CI
     runs-on: ubuntu-latest
@@ -67,6 +77,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run frontend tests
+        run: npm run test -- --run
 
       - name: Build app
         run: npm run build
