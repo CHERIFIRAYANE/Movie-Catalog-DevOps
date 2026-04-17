@@ -54,6 +54,7 @@ jobs:
           SECRET_KEY: "ci-prod-like-secret-key-with-more-than-fifty-characters-123456789"
           DATABASE_ENGINE: django.db.backends.sqlite3
           DATABASE_NAME: /tmp/ci-tests.sqlite3
+          CACHE_BACKEND: locmem
           REDIS_URL: redis://localhost:6379/0
           ALLOWED_HOSTS: localhost,127.0.0.1
         run: python manage.py test

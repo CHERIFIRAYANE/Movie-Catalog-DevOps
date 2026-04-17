@@ -1,6 +1,7 @@
 """
 Tests for movies app models and views.
 """
+from datetime import date
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from movies.models import Movie, Favorite
@@ -14,7 +15,7 @@ class MovieModelTest(TestCase):
     def setUp(self):
         self.movie = Movie.objects.create(
             title='Test Movie',
-            release_date='2023-01-01',
+            release_date=date(2023, 1, 1),
             genres=['Action', 'Drama'],
             vote_average=8.5,
             overview='A test movie',
@@ -45,7 +46,7 @@ class FavoriteModelTest(TestCase):
         )
         self.movie = Movie.objects.create(
             title='Test Movie',
-            release_date='2023-01-01',
+            release_date=date(2023, 1, 1),
             genres=['Action'],
             vote_average=8.5
         )
@@ -72,7 +73,7 @@ class MovieAPITest(TestCase):
         self.client = APIClient()
         self.movie = Movie.objects.create(
             title='Inception',
-            release_date='2010-07-16',
+            release_date=date(2010, 7, 16),
             genres=['Action', 'Sci-Fi'],
             vote_average=8.8
         )
@@ -114,7 +115,7 @@ class FavoriteAPITest(TestCase):
         )
         self.movie = Movie.objects.create(
             title='Inception',
-            release_date='2010-07-16',
+            release_date=date(2010, 7, 16),
             genres=['Action']
         )
 

@@ -37,7 +37,15 @@ class Movie(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.title} ({self.release_date.year if self.release_date else 'N/A'})"
+        year = 'N/A'
+
+        if self.release_date:
+            if hasattr(self.release_date, 'year'):
+                year = self.release_date.year
+            elif isinstance(self.release_date, str):
+                year = self.release_date[:4] if len(self.release_date) >= 4 else 'N/A'
+
+        return f"{self.title} ({year})"
 
 
 class Favorite(models.Model):

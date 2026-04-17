@@ -18,6 +18,31 @@ from movies.filters import MovieFilter
 logger = logging.getLogger(__name__)
 
 
+def _cache_get(key):
+    """Read from cache and degrade gracefully if cache backend is unavailable."""
+    try:
+        return cache.get(key)
+    except Exception as exc:
+        logger.warning("Cache GET failed for key '%s': %s", key, exc)
+        return None
+
+
+def _cache_set(key, value, ttl):
+    """Write to cache and degrade gracefully if cache backend is unavailable."""
+    try:
+        cache.set(key, value, ttl)
+    except Exception as exc:
+        logger.warning("Cache SET failed for key '%s': %s", key, exc)
+
+
+def _cache_delete(key):
+    """Delete cache key and degrade gracefully if cache backend is unavailable."""
+    try:
+        cache.delete(key)
+    except Exception as exc:
+        logger.warning("Cache DELETE failed for key '%s': %s", key, exc)
+
+
 class HealthCheckView(APIView):
     """
     Simple health check endpoint for Kubernetes liveness probes.
@@ -82,7 +107,7 @@ class MovieViewSet(viewsets.ReadOnlyModelViewSet):
         cache_key = f"movies:page:{page}:search:{search}"
 
         # Try to get from cache
-        cached_data = cache.get(cache_key)
+        cached_data = _cache_get(cache_key)
         if cached_data:
             return Response(cached_data)
 
@@ -90,7 +115,7 @@ class MovieViewSet(viewsets.ReadOnlyModelViewSet):
         response = super().list(request, *args, **kwargs)
 
         # Cache the response for 1 hour (3600 seconds)
-        cache.set(cache_key, response.data, 3600)
+        _cache_set(cache_key, response.data, 3600)
 
         return response
 
@@ -104,7 +129,7 @@ class MovieViewSet(viewsets.ReadOnlyModelViewSet):
         cache_key = f"movie:{movie_id}"
 
         # Try to get from cache
-        cached_data = cache.get(cache_key)
+        cached_data = _cache_get(cache_key)
         if cached_data:
             return Response(cached_data)
 
@@ -112,7 +137,7 @@ class MovieViewSet(viewsets.ReadOnlyModelViewSet):
         response = super().retrieve(request, *args, **kwargs)
 
         # Cache for 24 hours
-        cache.set(cache_key, response.data, 86400)
+        _cache_set(cache_key, response.data, 86400)
 
         return response
 
@@ -161,7 +186,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(favorite)
 
         # Invalidate cache
-        cache.delete(f"favorites:{request.user.id}")
+        _cache_delete(f"favorites:{request.user.id}")
 
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         return Response(serializer.data, status=status_code)
@@ -173,7 +198,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
         response = super().destroy(request, *args, **kwargs)
 
         # Invalidate cache
-        cache.delete(f"favorites:{request.user.id}")
+        _cache_delete(f"favorites:{request.user.id}")
 
         return response
 
