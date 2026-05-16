@@ -2,6 +2,7 @@
 REST Framework views for movies app.
 """
 import logging
+from collections import Counter
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -11,6 +12,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.core.cache import cache
 from django.db.models import Q
+from django.utils import timezone
 from movies.models import Movie, Favorite
 from movies.serializers import MovieSerializer, MovieDetailSerializer, FavoriteSerializer
 from movies.filters import MovieFilter
@@ -41,6 +43,12 @@ def _cache_delete(key):
         cache.delete(key)
     except Exception as exc:
         logger.warning("Cache DELETE failed for key '%s': %s", key, exc)
+
+
+def _invalidate_recommendations_cache(user_id):
+    """Invalidate common recommendation cache keys for a user."""
+    for limit in (6, 12, 20, 24):
+        _cache_delete(f"recommendations:user:{user_id}:limit:{limit}")
 
 
 class HealthCheckView(APIView):
@@ -187,6 +195,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
         # Invalidate cache
         _cache_delete(f"favorites:{request.user.id}")
+        _invalidate_recommendations_cache(request.user.id)
 
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         return Response(serializer.data, status=status_code)
@@ -199,8 +208,141 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
         # Invalidate cache
         _cache_delete(f"favorites:{request.user.id}")
+        _invalidate_recommendations_cache(request.user.id)
 
         return response
+
+
+def _get_personalized_recommendations(user, limit):
+    """Return recommendations based on user's favorite genre affinity."""
+    favorite_movies = list(
+        Movie.objects.filter(favorited_by__user=user)
+        .only('id', 'genres')
+        .distinct()
+    )
+
+    if not favorite_movies:
+        return [], 0, Counter()
+
+    favorite_ids = {movie.id for movie in favorite_movies}
+    genre_weights = Counter()
+    for movie in favorite_movies:
+        for genre in movie.genres or []:
+            if genre:
+                genre_weights[genre] += 1
+
+    # Limit evaluation window for performance while keeping quality.
+    candidate_movies = list(
+        Movie.objects.exclude(id__in=favorite_ids)
+        .only('id', 'title', 'release_date', 'genres', 'vote_average', 'overview', 'poster_url', 'budget', 'revenue', 'created_at')
+        .order_by('-vote_average', '-release_date')[:500]
+    )
+
+    current_year = timezone.now().year
+    scored = []
+
+    for movie in candidate_movies:
+        overlap_genres = [genre for genre in (movie.genres or []) if genre in genre_weights]
+
+        # Keep a few highly-rated fallback movies even without overlap.
+        if not overlap_genres and (movie.vote_average or 0) < 8.5:
+            continue
+
+        genre_score = sum(genre_weights[g] for g in overlap_genres)
+        rating_score = (movie.vote_average or 0) / 10.0
+        recency_bonus = 0.2 if movie.release_date and movie.release_date.year >= current_year - 5 else 0.0
+        total_score = (2.0 * genre_score) + (0.6 * rating_score) + recency_bonus
+
+        reason = 'Top rated for your profile'
+        if overlap_genres:
+            reason = f"Similar genres: {', '.join(overlap_genres[:2])}"
+
+        scored.append((total_score, movie, reason))
+
+    scored.sort(key=lambda row: (row[0], row[1].vote_average or 0), reverse=True)
+
+    recommendations = []
+    seen = set()
+    for _, movie, reason in scored:
+        if movie.id in seen:
+            continue
+        seen.add(movie.id)
+        recommendations.append((movie, reason))
+        if len(recommendations) >= limit:
+            break
+
+    return recommendations, len(favorite_ids), genre_weights
+
+
+def _get_public_recommendations(limit):
+    """Return generic high-quality recommendations when user history is unavailable."""
+    movies = list(
+        Movie.objects.only(
+            'id', 'title', 'release_date', 'genres', 'vote_average',
+            'overview', 'poster_url', 'budget', 'revenue', 'created_at'
+        ).order_by('-vote_average', '-release_date')[:limit]
+    )
+    return [(movie, 'Popular right now') for movie in movies]
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def recommendations(request):
+    """
+    Recommendation endpoint.
+
+    Query parameters:
+    - limit: number of recommendations (default: 12, max: 24)
+    """
+    try:
+        limit = int(request.query_params.get('limit', 12))
+    except (TypeError, ValueError):
+        limit = 12
+
+    limit = max(1, min(limit, 24))
+    user = request.user if request.user.is_authenticated else None
+
+    cache_key = f"recommendations:public:limit:{limit}"
+    if user:
+        cache_key = f"recommendations:user:{user.id}:limit:{limit}"
+
+    cached = _cache_get(cache_key)
+    if cached:
+        return Response(cached)
+
+    if user:
+        recommendations_with_reason, seed_count, genre_weights = _get_personalized_recommendations(user, limit)
+        strategy = 'personalized'
+
+        if not recommendations_with_reason:
+            recommendations_with_reason = _get_public_recommendations(limit)
+            strategy = 'popular_fallback'
+    else:
+        recommendations_with_reason = _get_public_recommendations(limit)
+        seed_count = 0
+        genre_weights = Counter()
+        strategy = 'popular'
+
+    movies = [movie for movie, _ in recommendations_with_reason]
+    serializer = MovieSerializer(movies, many=True)
+    reason_by_id = {movie.id: reason for movie, reason in recommendations_with_reason}
+
+    results = []
+    for item in serializer.data:
+        results.append({
+            **item,
+            'recommendation_reason': reason_by_id.get(item['id'], 'Suggested for you')
+        })
+
+    response_payload = {
+        'strategy': strategy,
+        'seed_favorites_count': seed_count,
+        'top_genres': [genre for genre, _ in genre_weights.most_common(5)],
+        'results': results,
+    }
+
+    _cache_set(cache_key, response_payload, 900)
+    return Response(response_payload)
 
 
 @api_view(['GET'])

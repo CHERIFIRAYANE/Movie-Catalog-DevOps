@@ -145,3 +145,29 @@ h3 {
     padding: 1.5rem 0.75rem;
   }
 }
+
+/* ====== RECOMMENDATIONS STRIP ====== */
+.recommendations-strip {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 0.5rem 0.25rem 0.75rem;
+  scroll-snap-type: x proximity;
+}
+
+.recommendation-item {
+  scroll-snap-align: start;
+}
+
+.recommendations-strip::-webkit-scrollbar {
+  height: 8px;
+}
+
+.recommendations-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.recommendations-strip::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+  border-radius: 999px;
+}

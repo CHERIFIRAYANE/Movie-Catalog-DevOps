@@ -311,6 +311,8 @@ From `MovieViewSet`:
 - Detail cache key: `movie:{id}`
 - Detail TTL: 86400s
 - Favorite mutation invalidates per-user favorites cache key
+- Cache operations are wrapped with graceful fallback logic; if Redis is unavailable,
+  API endpoints continue from database-backed logic instead of returning HTTP 500.
 
 ### 9.2 Elasticsearch search service
 
@@ -425,9 +427,13 @@ Jobs:
   - install requirements
   - `python manage.py check --deploy --fail-level WARNING`
   - python compile/syntax check
+  - `python manage.py test`
+  - test run uses SQLite and `CACHE_BACKEND=locmem` to avoid hard dependency
+    on a Redis service inside CI runner
 - `frontend-ci`
   - setup Node 20
   - `npm ci`
+  - `npm run test -- --run` (Vitest component/unit tests)
   - `npm run build`
 - `k8s-validate`
   - kubectl setup
@@ -438,6 +444,32 @@ Jobs:
 - `publish-images`
   - manual trigger (`workflow_dispatch`) only
   - docker hub login + push images tagged by commit sha
+
+### 12.1 Automated test evidence
+
+Backend tests currently implemented in:
+
+- `backend/movies/tests.py`
+
+Coverage scope in this file includes:
+
+- model behavior (Movie creation and string representation)
+- favorite relation constraints (duplicate prevention)
+- API endpoint behavior:
+  - list/retrieve/search movies
+  - health endpoint
+  - favorites auth behavior (unauthenticated vs authenticated)
+
+Frontend tests currently implemented in:
+
+- `frontend/src/smoke.test.js`
+- `frontend/src/components/SearchBar.test.jsx`
+- `frontend/src/components/Pagination.test.jsx`
+- `frontend/src/components/FavoriteButton.test.jsx`
+
+Execution environment for frontend tests:
+
+- Vitest with `jsdom` and globals enabled (`frontend/vite.config.js`)
 
 ---
 
@@ -454,6 +486,9 @@ Jobs:
 - PodDisruptionBudgets
 - Scheduled PostgreSQL backups (CronJob)
 - JWT auth with refresh flow
+- Cache failure resilience in backend views (fail-open behavior when Redis is down)
+- CI test isolation from Redis by explicit local-memory cache backend during backend tests
+- HorizontalPodAutoscaler resources for backend and frontend based on CPU/memory resource metrics
 
 ### Gaps/limitations to acknowledge in report
 
@@ -461,6 +496,50 @@ Jobs:
 - No full observability stack included (metrics dashboards)
 - No automated end-to-end integration test in CI
 - Image publishing is manual, not every push
+- HPA requires metrics-server in the cluster; without it, autoscaling is defined but not active
+
+### 13.2 Autoscaling strategy
+
+Current implementation:
+
+- fixed replicas on backend and frontend deployments
+- RollingUpdate strategy with maxUnavailable: 0
+- PodDisruptionBudgets with minAvailable: 1
+- resource requests/limits on stateless workloads
+- HPA for backend and frontend based on CPU utilization, with memory included for backend
+
+Why this is a pragmatic first step:
+
+- It is simple to explain and validate in a student project.
+- It scales only stateless tiers, which is safer than autoscaling databases.
+- It keeps the stateful layers stable (PostgreSQL, Elasticsearch).
+
+Validation approach:
+
+- `kubectl get hpa -n movie-catalog`
+- `kubectl describe hpa backend-hpa -n movie-catalog`
+- `kubectl top pods -n movie-catalog`
+- send synthetic load to `/api/movies/` or `/api/search/`
+
+Prometheus/Grafana note:
+
+- Prometheus metrics collection is more impressive for observability and demo value.
+- However, it is not required to make HPA work.
+- For this project, HPA + metrics-server is the best balance of realism, simplicity, and grading relevance.
+
+### 13.1 Environment variable governance
+
+- `.env.example` is intentionally versioned as a non-secret template of required variables.
+- `.env` is git-ignored and must remain local.
+- Report should explicitly distinguish:
+  - template/sample values tracked in repository
+  - real deployment secrets injected via Kubernetes Secret or CI secrets
+
+Evidence:
+
+- `.env.example`
+- `.gitignore`
+- `k8s/base/secret.yaml`
 
 ---
 
@@ -480,6 +559,10 @@ Generate a professional project report aligned with assignment constraints, emph
 - Do not claim features that are not present in source files.
 - Treat source code as authority over README prose.
 - For every major claim, cite at least one source path from this repo.
+- Explicitly label status for each advanced item as either:
+  - implemented
+  - partially implemented
+  - planned/not in CI
 
 ### 14.3 Recommended report structure
 
@@ -502,6 +585,10 @@ Generate a professional project report aligned with assignment constraints, emph
   - schedule of CronJob backups
   - endpoint list
   - cache TTLs
+- Include at least one "verification detail" line per major section, e.g.:
+  - concrete env var names used in CI
+  - exact test command in workflow
+  - exact endpoint path and auth requirement
 
 ---
 
@@ -513,6 +600,7 @@ Generate a professional project report aligned with assignment constraints, emph
 - `backend/config/settings.py`
 - `backend/movies/views.py`
 - `backend/movies/models.py`
+- `backend/movies/tests.py`
 - `backend/movies/search.py`
 - `backend/movies/management/commands/import_movies.py`
 - `backend/movies/management/commands/index_movies.py`
@@ -523,6 +611,11 @@ Generate a professional project report aligned with assignment constraints, emph
 - `frontend/src/pages/Search.jsx`
 - `frontend/src/pages/Favorites.jsx`
 - `frontend/src/services/api.js`
+- `frontend/src/smoke.test.js`
+- `frontend/src/components/SearchBar.test.jsx`
+- `frontend/src/components/Pagination.test.jsx`
+- `frontend/src/components/FavoriteButton.test.jsx`
+- `frontend/vite.config.js`
 - `frontend/nginx.conf`
 
 ### Containerization/Orchestration
@@ -566,6 +659,8 @@ Generate a professional project report aligned with assignment constraints, emph
 
 - `projet_containerisation.pdf`
 - `README.md`
+- `.env.example`
+- `.gitignore`
 - `docs/ARCHITECTURE.md`
 - `docs/API_DOCUMENTATION.md`
 - `docs/SETUP.md`
@@ -578,3 +673,7 @@ Generate a professional project report aligned with assignment constraints, emph
 Use this prompt with another model:
 
 "Using PROJECT_TECHNICAL_KNOWLEDGE_BASE.md as the primary factual source, generate a detailed academic-quality project report (French) aligned with the assignment constraints in projet_containerisation.pdf. Include a compliance matrix, architecture explanation, concrete technology justifications, deployment and CI/CD analysis, security/reliability discussion, limitations, and roadmap. Every major claim must be evidence-backed using repository file references. Avoid hallucinations and avoid claiming unimplemented features."
+
+Recommended stricter version:
+
+"Using PROJECT_TECHNICAL_KNOWLEDGE_BASE.md as the primary factual source, generate a detailed academic-quality project report (French) aligned with projet_containerisation.pdf. For each major section, include: (1) factual analysis, (2) concrete evidence paths, (3) at least one technical parameter value. Create a compliance matrix and explicitly tag claims as implemented/partial/planned. Include architecture, API/data model, containerization, Kubernetes operations, CI/CD quality controls, security/reliability posture, limitations, and roadmap. Do not infer features without evidence in listed files."

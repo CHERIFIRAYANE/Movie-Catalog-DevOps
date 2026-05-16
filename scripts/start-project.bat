@@ -33,6 +33,10 @@ if not errorlevel 1 (
 )
 kubectl apply -k k8s/overlays/local || exit /b 1
 
+echo [6.1/8] Restarting app deployments to load latest local images...
+kubectl rollout restart deployment/backend -n movie-catalog || exit /b 1
+kubectl rollout restart deployment/frontend -n movie-catalog || exit /b 1
+
 echo [7/8] Waiting for workloads...
 kubectl rollout status statefulset/postgres -n movie-catalog --timeout=300s || exit /b 1
 kubectl rollout status statefulset/elasticsearch -n movie-catalog --timeout=420s || exit /b 1

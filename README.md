@@ -4,6 +4,10 @@ Containerized movie catalog app with Django REST, React, PostgreSQL, Redis, and 
 
 Application web de catalogue de films conteneurisee avec Django REST, React, PostgreSQL, Redis et Kubernetes.
 
+## Technical Details:
+
+The Full on explanation of technical details of this project are available in "docs" folder, more specifically you can check the PROJECT_TECHNICAL_DETAILS .md file.
+
 ## Demo
 
 ### Windows
@@ -66,6 +70,7 @@ Docker Compose reste une alternative pour le developpement local uniquement.
 - Docker installed and running
 - kubectl in PATH
 - Local Kubernetes cluster running
+- Metrics server available in the cluster for HPA (required for autoscaling checks)
 
 Windows path:
 
@@ -103,6 +108,7 @@ Optional local dev path:
 - Pagination (20 movies/page)
 - Favorites management
 - Redis cache integration
+- Horizontal Pod Autoscaling on backend/frontend stateless workloads
 - Dockerized services and Kubernetes manifests
 - CI/CD ready structure
 
@@ -136,6 +142,7 @@ docker-compose down
 
 ## 📚 Documentation
 
+- Technical deep dive: [docs/PROJECT_TECHNICAL_DETAILS.md](docs/PROJECT_TECHNICAL_DETAILS.md)
 - [Architecture & Decisions](docs/ARCHITECTURE.md)
 - [API Endpoints](docs/API_DOCUMENTATION.md)
 - [Setup Guide](docs/SETUP.md)
@@ -148,6 +155,21 @@ docker-compose logs backend
 docker-compose logs frontend
 docker-compose logs db
 ```
+
+## 📈 Autoscaling
+
+The Kubernetes overlay includes HorizontalPodAutoscaler resources for backend and frontend.
+They depend on Kubernetes resource metrics, so the cluster must expose metrics-server.
+
+Check status:
+
+```bash
+kubectl get hpa -n movie-catalog
+kubectl describe hpa backend-hpa -n movie-catalog
+kubectl describe hpa frontend-hpa -n movie-catalog
+```
+
+For stronger observability, Prometheus/Grafana can be added later, but HPA itself only needs resource metrics.
 
 ## 👤 Authors
 

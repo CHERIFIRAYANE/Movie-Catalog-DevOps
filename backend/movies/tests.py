@@ -137,3 +137,58 @@ class FavoriteAPITest(TestCase):
         response = self.client.get('/api/favorites/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(len(response.data['results']) > 0)
+
+
+class RecommendationAPITest(TestCase):
+    """Test cases for recommendation API endpoint."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='reco_user',
+            email='reco@example.com',
+            password='testpass123'
+        )
+
+        self.favorite_seed = Movie.objects.create(
+            title='Seed Action Movie',
+            release_date=date(2015, 1, 1),
+            genres=['Action', 'Sci-Fi'],
+            vote_average=8.0
+        )
+
+        self.recommended_candidate = Movie.objects.create(
+            title='Action Candidate',
+            release_date=date(2020, 6, 1),
+            genres=['Action', 'Thriller'],
+            vote_average=8.6
+        )
+
+        self.other_movie = Movie.objects.create(
+            title='Drama Candidate',
+            release_date=date(2018, 3, 10),
+            genres=['Drama'],
+            vote_average=7.0
+        )
+
+    def test_recommendations_public(self):
+        """GET /api/recommendations/ should work for anonymous users."""
+        response = self.client.get('/api/recommendations/?limit=3')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('results', response.data)
+        self.assertIn('strategy', response.data)
+        self.assertTrue(len(response.data['results']) > 0)
+
+    def test_recommendations_personalized_excludes_favorites(self):
+        """Authenticated recommendations should not include favorited movies."""
+        Favorite.objects.create(user=self.user, movie=self.favorite_seed)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get('/api/recommendations/?limit=5')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['strategy'], 'personalized')
+
+        recommended_ids = {item['id'] for item in response.data['results']}
+        self.assertNotIn(self.favorite_seed.id, recommended_ids)
+        self.assertIn(self.recommended_candidate.id, recommended_ids)

@@ -9,11 +9,12 @@ echo [1/5] Checking pod readiness...
 kubectl get pods -n movie-catalog
 
 echo.
-echo [2/5] Checking ingress and services...
+echo [2/6] Checking ingress, services and autoscaling...
 kubectl get ingress,svc -n movie-catalog
+kubectl get hpa -n movie-catalog
 
 echo.
-echo [3/5] Checking API health through backend tunnel...
+echo [3/6] Checking API health through backend tunnel...
 curl -fsS http://localhost:8000/api/health/
 if errorlevel 1 (
   echo ERROR: Backend tunnel is not reachable at http://localhost:8000.
@@ -21,7 +22,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [4/5] Checking frontend root through frontend tunnel...
+echo [4/6] Checking frontend root through frontend tunnel...
 curl -fsS http://localhost:18080/ | findstr /R /I "<title>.*</title>"
 if errorlevel 1 (
   echo ERROR: Frontend tunnel is not reachable at http://localhost:18080.
@@ -29,10 +30,19 @@ if errorlevel 1 (
 )
 
 echo.
-echo [5/5] Checking movie count in DB...
+echo [5/6] Checking movie count in DB...
 kubectl exec -n movie-catalog deploy/backend -- python manage.py shell -c "from movies.models import Movie; print(Movie.objects.count())"
 if errorlevel 1 (
   echo ERROR: Unable to query movie count from backend pod.
+  set HAS_ERROR=1
+)
+
+echo.
+echo [6/6] Checking HPA status...
+kubectl describe hpa backend-hpa -n movie-catalog
+kubectl describe hpa frontend-hpa -n movie-catalog
+if errorlevel 1 (
+  echo ERROR: Unable to describe HPA resources.
   set HAS_ERROR=1
 )
 

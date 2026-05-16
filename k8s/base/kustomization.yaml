@@ -14,6 +14,7 @@ resources:
   - elasticsearch.yaml
   - backend.yaml
   - frontend.yaml
+  - hpa.yaml
   - ingress.yaml
   - reliability.yaml
   - networkpolicy-backup.yaml

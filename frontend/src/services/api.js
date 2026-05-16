@@ -174,6 +174,18 @@ export const searchAutocomplete = async (query = "", limit = 10) => {
   }
 };
 
+export const getRecommendations = async (limit = 12) => {
+  try {
+    const response = await apiClient.get("/recommendations/", {
+      params: { limit },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Recommendations error:", error);
+    throw error;
+  }
+};
+
 export const addToFavorites = async (movieId) => {
   try {
     const response = await apiClient.post("/favorites/", {

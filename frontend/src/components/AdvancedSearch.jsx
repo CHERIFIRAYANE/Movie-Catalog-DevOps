@@ -21,6 +21,7 @@ const AdvancedSearch = ({
   isFavorited,
   onFavorite,
   onUnfavorite,
+  topSection = null,
 }) => {
   const [query, setQuery] = useState("");
   const [selectedGenres, setSelectedGenres] = useState([]);
@@ -165,8 +166,8 @@ const AdvancedSearch = ({
   return (
     <div className="min-h-screen bg-transparent dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-850 transition-colors duration-300">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/30 light:backdrop-blur-md border-b border-white/30 dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-900/50 dark:backdrop-blur-md dark:border-slate-800/50 transition-all duration-300">
-        <div className="container mx-auto px-4 md:px-6 py-6">
+      <div className="relative border-b border-slate-200/60 dark:border-slate-800/70 bg-slate-100/95 dark:bg-slate-950/95 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -181,7 +182,7 @@ const AdvancedSearch = ({
                   value={query}
                   onChange={handleQueryChange}
                   placeholder="Search movies by title, actor, or keyword..."
-                  className="w-full pl-12 pr-12 py-3 bg-white/60 border border-white/40 rounded-lg text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition dark:bg-slate-800/50 dark:border-slate-700/50 dark:text-white dark:placeholder-slate-400"
+                  className="w-full pl-12 pr-12 py-3 bg-white border border-slate-300 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition dark:bg-slate-900 dark:border-slate-700 dark:text-white dark:placeholder-slate-400"
                   onFocus={() => query.trim() && setShowAutocomplete(true)}
                 />
                 {query && (
@@ -195,7 +196,7 @@ const AdvancedSearch = ({
                       setRatingMin("");
                       handleSearch(1); // Reset to initial state with all filters cleared
                     }}
-                    className="absolute right-4 p-1 hover:bg-white/50 dark:hover:bg-slate-700 rounded transition"
+                    className="absolute right-4 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition"
                   >
                     <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   </button>
@@ -209,13 +210,13 @@ const AdvancedSearch = ({
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white/90 border border-white/50 dark:bg-slate-800 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden z-40 backdrop-blur-sm"
+                    className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-40"
                   >
                     {autocompleteResults.map((suggestion, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleAutocompleteSelect(suggestion)}
-                        className="w-full px-4 py-2 text-left hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center gap-2"
                       >
                         <Search className="w-3 h-3 text-slate-500 dark:text-slate-500" />
                         {suggestion}
@@ -231,7 +232,7 @@ const AdvancedSearch = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/60 hover:bg-white/80 border border-white/40 rounded-lg text-slate-700 transition dark:bg-slate-800/50 dark:hover:bg-slate-700/50 dark:border-slate-700/50 dark:text-slate-200"
+                  className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-slate-700 transition dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 >
                   <Filter className="w-4 h-4" />
                   <span>{showFilters ? "Hide" : "Show"} Filters</span>
@@ -263,7 +264,7 @@ const AdvancedSearch = ({
                 ratingMin) && (
                 <button
                   onClick={handleResetFilters}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/50 hover:bg-white/70 border border-white/40 rounded-lg text-slate-700 transition dark:bg-slate-700/50 dark:hover:bg-slate-600/50 dark:border-slate-600/50 dark:text-slate-200"
+                  className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-slate-700 transition dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Reset</span>
@@ -278,7 +279,7 @@ const AdvancedSearch = ({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-4 pt-4 border-t border-white/40 dark:border-slate-800"
+                  className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800"
                 >
                   {/* Genre Filter */}
                   <div>
@@ -293,7 +294,7 @@ const AdvancedSearch = ({
                           className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                             selectedGenres.includes(genre)
                               ? "bg-primary-600 text-white"
-                              : "bg-white/70 text-slate-700 border border-white/50 hover:bg-white dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
+                              : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
                           }`}
                         >
                           {genre}
@@ -314,7 +315,7 @@ const AdvancedSearch = ({
                           setYearMin(e.target.value);
                           setPage(1);
                         }}
-                        className="w-full px-3 py-2 bg-white/70 border border-white/40 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
                       >
                         <option value="">Any Year</option>
                         {availableYears
@@ -337,7 +338,7 @@ const AdvancedSearch = ({
                           setYearMax(e.target.value);
                           setPage(1);
                         }}
-                        className="w-full px-3 py-2 bg-white/70 border border-white/40 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
                       >
                         <option value="">Any Year</option>
                         {availableYears
@@ -360,7 +361,7 @@ const AdvancedSearch = ({
                           setRatingMin(e.target.value);
                           setPage(1);
                         }}
-                        className="w-full px-3 py-2 bg-white/70 border border-white/40 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
                       >
                         <option value="">Any Rating</option>
                         <option value="5">5.0+</option>
@@ -379,7 +380,9 @@ const AdvancedSearch = ({
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+        {topSection}
+
         {/* Error Message */}
         {error && (
           <motion.div

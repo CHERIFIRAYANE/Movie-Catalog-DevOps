@@ -7,7 +7,7 @@ from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
 from movies.views import (
     MovieViewSet, FavoriteViewSet, HealthCheckView, advanced_search, 
-    search_autocomplete, register, login, verify_email, resend_verification,
+    search_autocomplete, recommendations, register, login, verify_email, resend_verification,
     user_profile, update_profile
 )
 
@@ -34,6 +34,7 @@ urlpatterns = [
         # Search endpoints (custom, MUST come before router)
         path('search/', advanced_search, name='advanced_search'),
         path('autocomplete/', search_autocomplete, name='search_autocomplete'),
+        path('recommendations/', recommendations, name='recommendations'),
         
         # Standard REST endpoints
         path('', include(router.urls)),
