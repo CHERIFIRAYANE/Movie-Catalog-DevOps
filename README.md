@@ -173,7 +173,7 @@ For stronger observability, Prometheus/Grafana can be added later, but HPA itsel
 
 ## 👤 Authors
 
-Rayane CHERIFI and SEBA Abdelwahab
+Rayane CHERIFI
 
 ## 📝 License
 
